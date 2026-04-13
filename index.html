@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Playcount</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0a0a0a;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+  }
+
+  .app { max-width: 1200px; margin: 0 auto; }
+
+  /* NAVBAR */
+  .navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.08);
+    background: #0d0d0d;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .logo { font-size: 18px; font-weight: 500; letter-spacing: -0.02em; }
+  .logo span { color: #1DB954; }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #1DB954;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; color: #000;
+  }
+  .logout-btn {
+    font-size: 12px; color: #666;
+    background: none;
+    border: 0.5px solid rgba(255,255,255,0.1);
+    padding: 5px 12px; border-radius: 20px; cursor: pointer;
+  }
+  .logout-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+  /* PAGE NAV */
+  .page-nav {
+    display: flex;
+    padding: 0 24px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.08);
+    background: #0d0d0d;
+  }
+  .page-nav-item {
+    font-size: 14px;
+    padding: 14px 18px 12px;
+    color: #555;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .page-nav-item:hover { color: #aaa; }
+  .page-nav-item.active { color: #fff; border-bottom: 2px solid #1DB954; }
+
+  /* PAGE CONTENT */
+  .page { display: none; padding: 0; }
+  .page.active { display: block; }
+
+  /* SECTION HEADER */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px 10px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill {
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: #1a1a1a;
+    color: #666;
+    border: 0.5px solid rgba(255,255,255,0.08);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .pill:hover { color: #aaa; }
+  .pill.active { background: #1DB954; color: #000; font-weight: 500; border-color: transparent; }
+
+  .entries-wrap { display: flex; align-items: center; gap: 8px; }
+  .entries-label { font-size: 12px; color: #666; }
+  .entries-select {
+    background: #111;
+    border: none;
+    outline: none;
+    color: #1DB954;
+    padding: 3px 6px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .entries-select:focus { background: transparent; outline: none; }
+
+  /* SUBTABS */
+  .subtabs {
+    display: flex; gap: 4px;
+    padding: 0 24px 10px;
+    flex-wrap: wrap;
+  }
+  .subtab {
+    font-size: 11px; padding: 4px 12px;
+    border-radius: 6px;
+    background: #1a1a1a;
+    color: #666;
+    border: 0.5px solid rgba(255,255,255,0.07);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .subtab.active {
+    background: rgba(29,185,84,0.18);
+    color: #1DB954;
+    border-color: rgba(29,185,84,0.3);
+  }
+
+  /* TAB CONTENT */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* TRACK LIST */
+  .track-list {
+    padding: 0 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .track-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #111;
+    transition: background 0.15s;
+  }
+  .track-row:hover { background: #161616; }
+  .track-num { font-size: 11px; color: #444; width: 18px; text-align: right; flex-shrink: 0; }
+  .track-thumb {
+    width: 34px; height: 34px; border-radius: 3px;
+    flex-shrink: 0;
+    object-fit: cover;
+    background: #222;
+  }
+  .track-info { flex: 1; min-width: 0; }
+  .track-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track-artist { font-size: 11px; color: #555; margin-top: 1px; }
+  .bar-wrap { margin-top: 5px; }
+  .bar-bg { height: 2px; background: rgba(255,255,255,0.06); border-radius: 1px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 1px; }
+  .bar-green { background: #1DB954; }
+  .bar-amber { background: #F59E0B; }
+  .track-right { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; min-width: 52px; }
+  .play-count { font-size: 22px; font-weight: 500; line-height: 1; color: #1DB954; }
+  .play-count.amber { color: #F59E0B; }
+  .plays-label { font-size: 8px; color: #444; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 1px; }
+  .time-ago { font-size: 10px; color: #444; margin-top: 2px; }
+  .badge-alltime {
+    font-size: 9px; padding: 1px 7px; border-radius: 20px;
+    background: rgba(245,158,11,0.15); color: #F59E0B;
+    font-weight: 500; margin-top: 3px;
+  }
+
+  /* ARTIST LIST */
+  .artist-list {
+    padding: 0 24px 24px;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .artist-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 12px; border-radius: 6px; background: #111;
+    transition: background 0.15s;
+  }
+  .artist-row:hover { background: #161616; }
+  .artist-thumb {
+    width: 34px; height: 34px; border-radius: 50%;
+    flex-shrink: 0; background: #222;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #444;
+  }
+  .artist-name { font-size: 13px; font-weight: 500; flex: 1; }
+  .artist-sub { font-size: 11px; color: #555; margin-top: 1px; }
+  .badge-following {
+    font-size: 10px; padding: 2px 9px; border-radius: 20px;
+    background: rgba(29,185,84,0.15); color: #1DB954; font-weight: 500;
+  }
+
+  /* LETTER DIVIDER */
+  .letter-divider { font-size: 11px; color: #444; font-weight: 500; padding: 8px 12px 4px; letter-spacing: 0.06em; }
+
+  /* MOBILE */
+  @media (max-width: 600px) {
+    .navbar { padding: 12px 16px; }
+    .logo { font-size: 16px; }
+    .logout-btn { display: none; }
+    .page-nav { padding: 0 16px; }
+    .page-nav-item { font-size: 13px; padding: 12px 14px 10px; }
+    .section-header { padding: 12px 16px 8px; flex-direction: column; align-items: flex-start; }
+    .entries-wrap { align-self: flex-end; }
+    .subtabs { padding: 0 16px 8px; }
+    .track-list { padding: 0 16px 20px; }
+    .artist-list { padding: 0 16px 20px; }
+    .play-count { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="logo">play<span>count</span></div>
+    <div class="nav-right">
+      <div class="avatar">JD</div>
+      <button class="logout-btn">Log out</button>
+    </div>
+  </nav>
+
+  <!-- PAGE NAV -->
+  <div class="page-nav">
+    <div class="page-nav-item active" onclick="setPage('tracks')">Tracks</div>
+    <div class="page-nav-item" onclick="setPage('artists')">Artists</div>
+  </div>
+
+  <!-- TRACKS PAGE -->
+  <div class="page active" id="page-tracks">
+    <div class="section-header">
+      <div class="pills">
+        <div class="pill active" onclick="setTab('tracks', 'recent', this)">Recently played</div>
+        <div class="pill" onclick="setTab('tracks', 'alltime', this)">All-time top</div>
+      </div>
+      <div class="entries-wrap">
+        <span class="entries-label">Entries:</span>
+        <select class="entries-select" onchange="setEntries('tracks', this.value)">
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Recently played -->
+    <div class="tab-content active" id="tracks-recent">
+      <div class="track-list" id="list-recent"></div>
+    </div>
+
+    <!-- All-time top -->
+    <div class="tab-content" id="tracks-alltime">
+      <div class="track-list" id="list-alltime"></div>
+    </div>
+  </div>
+
+  <!-- ARTISTS PAGE -->
+  <div class="page" id="page-artists">
+    <div class="section-header">
+      <div class="pills">
+        <div class="pill active" onclick="setTab('artists', 'top', this)">Top artists</div>
+        <div class="pill" onclick="setTab('artists', 'followed', this)">Recently followed</div>
+        <div class="pill" onclick="setTab('artists', 'all', this)">All artists</div>
+      </div>
+      <div class="entries-wrap">
+        <span class="entries-label">Entries:</span>
+        <select class="entries-select" onchange="setEntries('artists', this.value)">
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Top artists -->
+    <div class="tab-content active" id="artists-top">
+      <div class="subtabs">
+        <div class="subtab active" onclick="setSubtab('top', 'week', this)">This week</div>
+        <div class="subtab" onclick="setSubtab('top', 'month', this)">This month</div>
+        <div class="subtab" onclick="setSubtab('top', 'year', this)">This year</div>
+        <div class="subtab" onclick="setSubtab('top', 'alltime', this)">All time</div>
+      </div>
+      <div class="artist-list" id="list-top-artists"></div>
+    </div>
+
+    <!-- Recently followed -->
+    <div class="tab-content" id="artists-followed">
+      <div class="artist-list" id="list-followed"></div>
+    </div>
+
+    <!-- All artists -->
+    <div class="tab-content" id="artists-all">
+      <div class="artist-list" id="list-all-artists"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── DUMMY DATA ──────────────────────────────────────────────
+
+  const recentTracks = [
+    { name: 'Blinding Lights', artist: 'The Weeknd', plays: 41, ago: '2 min ago', pct: 90, color: '#1a3a2a' },
+    { name: 'As It Was', artist: 'Harry Styles', plays: 33, ago: '1 hr ago', pct: 74, color: '#2a1a3a' },
+    { name: 'Stay', artist: 'The Kid LAROI, Justin Bieber', plays: 29, ago: '3 hr ago', pct: 60, color: '#3a2a1a' },
+    { name: 'Heat Waves', artist: 'Glass Animals', plays: 24, ago: 'yesterday', pct: 48, color: '#1a2a3a' },
+    { name: 'Levitating', artist: 'Dua Lipa', plays: 21, ago: 'yesterday', pct: 38, color: '#3a1a2a' },
+    { name: 'Peaches', artist: 'Justin Bieber', plays: 18, ago: '2 days ago', pct: 30, color: '#2a3a2a' },
+    { name: 'good 4 u', artist: 'Olivia Rodrigo', plays: 15, ago: '2 days ago', pct: 24, color: '#3a1a3a' },
+    { name: 'INDUSTRY BABY', artist: 'Lil Nas X, Jack Harlow', plays: 12, ago: '3 days ago', pct: 18, color: '#1a3a3a' },
+    { name: 'Easy On Me', artist: 'Adele', plays: 10, ago: '3 days ago', pct: 14, color: '#3a2a2a' },
+    { name: 'Bad Habits', artist: 'Ed Sheeran', plays: 9, ago: '4 days ago', pct: 11, color: '#2a2a3a' },
+  ];
+
+  const alltimeTracks = [
+    { name: 'Blinding Lights', artist: 'The Weeknd', plays: 147, pct: 94, color: '#1a3a2a' },
+    { name: 'As It Was', artist: 'Harry Styles', plays: 108, pct: 76, color: '#2a1a3a' },
+    { name: 'Levitating', artist: 'Dua Lipa', plays: 84, pct: 58, color: '#3a1a2a' },
+    { name: 'Stay', artist: 'The Kid LAROI', plays: 65, pct: 44, color: '#3a2a1a' },
+    { name: 'good 4 u', artist: 'Olivia Rodrigo', plays: 47, pct: 32, color: '#3a1a3a' },
+    { name: 'Heat Waves', artist: 'Glass Animals', plays: 38, pct: 26, color: '#1a2a3a' },
+    { name: 'Peaches', artist: 'Justin Bieber', plays: 31, pct: 20, color: '#2a3a2a' },
+    { name: 'Easy On Me', artist: 'Adele', plays: 27, pct: 17, color: '#3a2a2a' },
+    { name: 'Bad Habits', artist: 'Ed Sheeran', plays: 22, pct: 14, color: '#2a2a3a' },
+    { name: 'INDUSTRY BABY', artist: 'Lil Nas X, Jack Harlow', plays: 18, pct: 11, color: '#1a3a3a' },
+  ];
+
+  const topArtistsData = {
+    week:    [{ name: 'The Weeknd', plays: 24, color: '#1a3a2a' }, { name: 'Harry Styles', plays: 18, color: '#2a1a3a' }, { name: 'Dua Lipa', plays: 15, color: '#3a1a2a' }, { name: 'Taylor Swift', plays: 11, color: '#3a2a1a' }, { name: 'Olivia Rodrigo', plays: 8, color: '#3a1a3a' }],
+    month:   [{ name: 'Dua Lipa', plays: 67, color: '#3a1a2a' }, { name: 'The Weeknd', plays: 58, color: '#1a3a2a' }, { name: 'Taylor Swift', plays: 44, color: '#3a2a1a' }, { name: 'Harry Styles', plays: 39, color: '#2a1a3a' }, { name: 'Glass Animals', plays: 21, color: '#1a2a3a' }],
+    year:    [{ name: 'The Weeknd', plays: 312, color: '#1a3a2a' }, { name: 'Dua Lipa', plays: 278, color: '#3a1a2a' }, { name: 'Harry Styles', plays: 201, color: '#2a1a3a' }, { name: 'Olivia Rodrigo', plays: 166, color: '#3a1a3a' }, { name: 'Taylor Swift', plays: 143, color: '#3a2a1a' }],
+    alltime: [{ name: 'The Weeknd', plays: 891, color: '#1a3a2a' }, { name: 'Dua Lipa', plays: 734, color: '#3a1a2a' }, { name: 'Harry Styles', plays: 612, color: '#2a1a3a' }, { name: 'Taylor Swift', plays: 589, color: '#3a2a1a' }, { name: 'Olivia Rodrigo', plays: 421, color: '#3a1a3a' }],
+  };
+
+  const followedArtists = [
+    { name: 'Olivia Rodrigo', followedAgo: 'Followed 2 days ago', color: '#3a1a3a' },
+    { name: 'Billie Eilish', followedAgo: 'Followed 1 week ago', color: '#1a2a3a' },
+    { name: 'Sabrina Carpenter', followedAgo: 'Followed 2 weeks ago', color: '#2a3a1a' },
+    { name: 'SZA', followedAgo: 'Followed 3 weeks ago', color: '#3a2a1a' },
+    { name: 'Charli XCX', followedAgo: 'Followed 1 month ago', color: '#1a3a2a' },
+  ];
+
+  const allArtists = [
+    { name: 'Billie Eilish', color: '#1a2a3a' },
+    { name: 'Charli XCX', color: '#1a3a2a' },
+    { name: 'Dua Lipa', color: '#3a1a2a' },
+    { name: 'Ed Sheeran', color: '#2a2a3a' },
+    { name: 'Glass Animals', color: '#1a2a3a' },
+    { name: 'Harry Styles', color: '#2a1a3a' },
+    { name: 'Justin Bieber', color: '#2a3a2a' },
+    { name: 'Lil Nas X', color: '#3a3a1a' },
+    { name: 'Olivia Rodrigo', color: '#3a1a3a' },
+    { name: 'Sabrina Carpenter', color: '#2a3a1a' },
+    { name: 'SZA', color: '#3a2a1a' },
+    { name: 'Taylor Swift', color: '#3a2a1a' },
+    { name: 'The Weeknd', color: '#1a3a2a' },
+  ];
+
+  // ── STATE ────────────────────────────────────────────────────
+
+  let state = {
+    page: 'tracks',
+    tracksTab: 'recent',
+    artistsTab: 'top',
+    topSubtab: 'week',
+    entries: { tracks: 20, artists: 20 },
+  };
+
+  // ── RENDER ───────────────────────────────────────────────────
+
+  function renderTrackRow(t, i, isAlltime) {
+    return `
+      <div class="track-row">
+        <div class="track-num">${i + 1}</div>
+        <div class="track-thumb" style="background:${t.color}"></div>
+        <div class="track-info">
+          <div class="track-name">${t.name}</div>
+          <div class="track-artist">${t.artist}</div>
+          <div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${isAlltime ? 'bar-amber' : 'bar-green'}" style="width:${t.pct}%"></div></div></div>
+        </div>
+        <div class="track-right">
+          <div class="play-count ${isAlltime ? 'amber' : ''}">${t.plays}</div>
+          <div class="plays-label">plays</div>
+          ${isAlltime ? '<div class="badge-alltime">all-time</div>' : `<div class="time-ago">${t.ago}</div>`}
+        </div>
+      </div>`;
+  }
+
+  function renderArtistRow(a, i) {
+    return `
+      <div class="artist-row">
+        <div class="artist-thumb" style="background:${a.color}"></div>
+        <div class="artist-info">
+          <div class="artist-name">${a.name}</div>
+          ${a.plays !== undefined ? '' : `<div class="artist-sub">${a.followedAgo || ''}</div>`}
+        </div>
+        ${a.plays !== undefined
+          ? `<div class="track-right"><div class="play-count">${a.plays}</div><div class="plays-label">plays</div></div>`
+          : `<div class="badge-following">following</div>`
+        }
+      </div>`;
+  }
+
+  function renderAllArtists(list) {
+    let html = '';
+    let lastLetter = '';
+    list.forEach(a => {
+      const letter = a.name[0].toUpperCase();
+      if (letter !== lastLetter) {
+        html += `<div class="letter-divider">${letter}</div>`;
+        lastLetter = letter;
+      }
+      html += `
+        <div class="artist-row">
+          <div class="artist-thumb" style="background:${a.color}"></div>
+          <div class="artist-name">${a.name}</div>
+          <div class="badge-following">following</div>
+        </div>`;
+    });
+    return html;
+  }
+
+  function render() {
+    const n = state.entries;
+
+    // Recent tracks
+    document.getElementById('list-recent').innerHTML =
+      recentTracks.slice(0, n.tracks).map((t, i) => renderTrackRow(t, i, false)).join('');
+
+    // All-time tracks
+    document.getElementById('list-alltime').innerHTML =
+      alltimeTracks.slice(0, n.tracks).map((t, i) => renderTrackRow(t, i, true)).join('');
+
+    // Top artists
+    const topData = topArtistsData[state.topSubtab] || topArtistsData.week;
+    document.getElementById('list-top-artists').innerHTML =
+      topData.slice(0, n.artists).map((a, i) => renderArtistRow(a, i)).join('');
+
+    // Followed
+    document.getElementById('list-followed').innerHTML =
+      followedArtists.slice(0, n.artists).map((a, i) => renderArtistRow(a, i)).join('');
+
+    // All artists
+    document.getElementById('list-all-artists').innerHTML =
+      renderAllArtists(allArtists.slice(0, n.artists));
+  }
+
+  // ── NAVIGATION ───────────────────────────────────────────────
+
+  function setPage(page) {
+    state.page = page;
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.page-nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.querySelectorAll('.page-nav-item').forEach(n => {
+      if (n.textContent.toLowerCase() === page) n.classList.add('active');
+    });
+  }
+
+  function setTab(page, tab, el) {
+    if (page === 'tracks') state.tracksTab = tab;
+    else state.artistsTab = tab;
+    el.closest('.section-header').querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    const pageEl = document.getElementById('page-' + page);
+    pageEl.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById(page + '-' + tab).classList.add('active');
+    render();
+  }
+
+  function setSubtab(group, key, el) {
+    state.topSubtab = key;
+    el.closest('.subtabs').querySelectorAll('.subtab').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    render();
+  }
+
+  function setEntries(page, val) {
+    state.entries[page] = parseInt(val);
+    render();
+  }
+
+  // ── INIT ─────────────────────────────────────────────────────
+  render();
+</script>
+</body>
+</html>
