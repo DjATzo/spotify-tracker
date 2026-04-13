@@ -6,155 +6,65 @@
 <title>Playcount</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    background: #0a0a0a;
-    color: #fff;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    min-height: 100vh;
-  }
-
+  body { background: #0a0a0a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
   .app { max-width: 1200px; margin: 0 auto; }
 
   /* NAVBAR */
-  .navbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 24px;
-    border-bottom: 0.5px solid rgba(255,255,255,0.08);
-    background: #0d0d0d;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  .logo { font-size: 18px; font-weight: 500; letter-spacing: -0.02em; }
+  .navbar { display: flex; align-items: center; padding: 0 24px; height: 52px; gap: 32px; border-bottom: 0.5px solid rgba(255,255,255,0.08); background: #0d0d0d; position: sticky; top: 0; z-index: 100; }
+  .logo { font-size: 18px; font-weight: 500; letter-spacing: -0.02em; flex-shrink: 0; }
   .logo span { color: #1DB954; }
-  .logo em { font-size: 11px; font-weight: 400; color: #444; margin-left: 6px; font-style: normal; }
-  .nav-right { display: flex; align-items: center; gap: 12px; }
-  .avatar {
-    width: 32px; height: 32px; border-radius: 50%;
-    background: #1DB954;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 500; color: #000;
-  }
-  .logout-btn {
-    font-size: 12px; color: #666;
-    background: none;
-    border: 0.5px solid rgba(255,255,255,0.1);
-    padding: 5px 12px; border-radius: 20px; cursor: pointer;
-  }
+  .logo em { font-size: 11px; font-weight: 400; color: #F97316; margin-left: 6px; font-style: normal; }
+
+  /* NAV LINKS */
+  .nav-links { display: flex; align-items: center; flex: 1; }
+  .nav-item { position: relative; }
+  .nav-item-label { font-size: 13px; padding: 0 14px; height: 52px; display: flex; align-items: center; color: #666; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; white-space: nowrap; user-select: none; }
+  .nav-item-label:hover { color: #fff; }
+  .nav-item-label.active { color: #fff; border-bottom: 2px solid #1DB954; }
+
+  /* DROPDOWN */
+  .nav-dropdown { display: none; position: absolute; top: calc(100% + 1px); left: 0; background: #161616; border: 0.5px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px; min-width: 190px; z-index: 200; }
+  .nav-item:hover .nav-dropdown { display: block; }
+  .drop-item { display: block; font-size: 13px; padding: 8px 12px; color: #777; border-radius: 6px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .drop-item:hover { background: #222; color: #fff; }
+  .drop-item.active { color: #1DB954; }
+
+  .nav-right { display: flex; align-items: center; gap: 12px; margin-left: auto; flex-shrink: 0; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: #1DB954; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #000; }
+  .logout-btn { font-size: 12px; color: #666; background: none; border: 0.5px solid rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px; cursor: pointer; }
   .logout-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
 
-  /* PAGE NAV */
-  .page-nav {
-    display: flex;
-    padding: 0 24px;
-    border-bottom: 0.5px solid rgba(255,255,255,0.08);
-    background: #0d0d0d;
-  }
-  .page-nav-item {
-    font-size: 14px;
-    padding: 14px 18px 12px;
-    color: #555;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    cursor: pointer;
-    transition: color 0.15s;
-  }
-  .page-nav-item:hover { color: #aaa; }
-  .page-nav-item.active { color: #fff; border-bottom: 2px solid #1DB954; }
-
-  /* PAGE CONTENT */
-  .page { display: none; padding: 0; }
+  /* PAGES */
+  .page { display: none; }
   .page.active { display: block; }
 
   /* SECTION HEADER */
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 24px 10px;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
+  .section-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px 10px; flex-wrap: wrap; gap: 10px; }
   .pills { display: flex; gap: 6px; flex-wrap: wrap; }
-  .pill {
-    font-size: 13px;
-    padding: 6px 14px;
-    border-radius: 20px;
-    background: #1a1a1a;
-    color: #666;
-    border: 0.5px solid rgba(255,255,255,0.08);
-    cursor: pointer;
-    transition: all 0.15s;
-  }
+  .pill { font-size: 13px; padding: 6px 14px; border-radius: 20px; background: #1a1a1a; color: #666; border: 0.5px solid rgba(255,255,255,0.08); cursor: pointer; transition: all 0.15s; }
   .pill:hover { color: #aaa; }
   .pill.active { background: #1DB954; color: #000; font-weight: 500; border-color: transparent; }
 
   .entries-wrap { display: flex; align-items: center; gap: 8px; }
   .entries-label { font-size: 12px; color: #666; }
-  .entries-select {
-    background: #111;
-    border: none;
-    outline: none;
-    color: #1DB954;
-    padding: 3px 6px;
-    font-size: 12px;
-    cursor: pointer;
-    border-radius: 4px;
-  }
+  .entries-select { background: #111; border: none; outline: none; color: #1DB954; padding: 3px 4px; font-size: 11px; cursor: pointer; }
   .entries-select:focus { background: transparent; outline: none; }
 
   /* SUBTABS */
-  .subtabs {
-    display: flex; gap: 4px;
-    padding: 0 24px 10px;
-    flex-wrap: wrap;
-  }
-  .subtab {
-    font-size: 11px; padding: 4px 12px;
-    border-radius: 6px;
-    background: #1a1a1a;
-    color: #666;
-    border: 0.5px solid rgba(255,255,255,0.07);
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .subtab.active {
-    background: rgba(29,185,84,0.18);
-    color: #1DB954;
-    border-color: rgba(29,185,84,0.3);
-  }
+  .subtabs { display: flex; gap: 4px; padding: 0 24px 10px; flex-wrap: wrap; }
+  .subtab { font-size: 11px; padding: 4px 12px; border-radius: 6px; background: #1a1a1a; color: #666; border: 0.5px solid rgba(255,255,255,0.07); cursor: pointer; transition: all 0.15s; }
+  .subtab.active { background: rgba(29,185,84,0.18); color: #1DB954; border-color: rgba(29,185,84,0.3); }
 
   /* TAB CONTENT */
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
   /* TRACK LIST */
-  .track-list {
-    padding: 0 24px 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-  .track-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
-    border-radius: 6px;
-    background: #111;
-    transition: background 0.15s;
-  }
+  .track-list { padding: 0 24px 24px; display: flex; flex-direction: column; gap: 3px; }
+  .track-row { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 6px; background: #111; transition: background 0.15s; }
   .track-row:hover { background: #161616; }
   .track-num { font-size: 11px; color: #444; width: 18px; text-align: right; flex-shrink: 0; }
-  .track-thumb {
-    width: 34px; height: 34px; border-radius: 3px;
-    flex-shrink: 0;
-    object-fit: cover;
-    background: #222;
-  }
+  .track-thumb { width: 34px; height: 34px; border-radius: 3px; flex-shrink: 0; }
   .track-info { flex: 1; min-width: 0; }
   .track-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .track-artist { font-size: 11px; color: #555; margin-top: 1px; }
@@ -168,46 +78,25 @@
   .play-count.amber { color: #F59E0B; }
   .plays-label { font-size: 8px; color: #444; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 1px; }
   .time-ago { font-size: 10px; color: #444; margin-top: 2px; }
-  .badge-alltime {
-    font-size: 9px; padding: 1px 7px; border-radius: 20px;
-    background: rgba(245,158,11,0.15); color: #F59E0B;
-    font-weight: 500; margin-top: 3px;
-  }
+  .badge-alltime { font-size: 9px; padding: 1px 7px; border-radius: 20px; background: rgba(245,158,11,0.15); color: #F59E0B; font-weight: 500; margin-top: 3px; }
 
   /* ARTIST LIST */
-  .artist-list {
-    padding: 0 24px 24px;
-    display: flex; flex-direction: column; gap: 3px;
-  }
-  .artist-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 8px 12px; border-radius: 6px; background: #111;
-    transition: background 0.15s;
-  }
+  .artist-list { padding: 0 24px 24px; display: flex; flex-direction: column; gap: 3px; }
+  .artist-row { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 6px; background: #111; transition: background 0.15s; }
   .artist-row:hover { background: #161616; }
-  .artist-thumb {
-    width: 34px; height: 34px; border-radius: 50%;
-    flex-shrink: 0; background: #222;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; color: #444;
-  }
-  .artist-name { font-size: 13px; font-weight: 500; flex: 1; }
+  .artist-thumb { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; }
+  .artist-info { flex: 1; min-width: 0; }
+  .artist-name { font-size: 13px; font-weight: 500; }
   .artist-sub { font-size: 11px; color: #555; margin-top: 1px; }
-  .badge-following {
-    font-size: 10px; padding: 2px 9px; border-radius: 20px;
-    background: rgba(29,185,84,0.15); color: #1DB954; font-weight: 500;
-  }
-
-  /* LETTER DIVIDER */
+  .badge-following { font-size: 10px; padding: 2px 9px; border-radius: 20px; background: rgba(29,185,84,0.15); color: #1DB954; font-weight: 500; flex-shrink: 0; }
   .letter-divider { font-size: 11px; color: #444; font-weight: 500; padding: 8px 12px 4px; letter-spacing: 0.06em; }
 
   /* MOBILE */
   @media (max-width: 600px) {
-    .navbar { padding: 12px 16px; }
+    .navbar { padding: 0 16px; gap: 16px; }
     .logo { font-size: 16px; }
     .logout-btn { display: none; }
-    .page-nav { padding: 0 16px; }
-    .page-nav-item { font-size: 13px; padding: 12px 14px 10px; }
+    .nav-item-label { padding: 0 10px; font-size: 12px; }
     .section-header { padding: 12px 16px 8px; flex-direction: column; align-items: flex-start; }
     .entries-wrap { align-self: flex-end; }
     .subtabs { padding: 0 16px 8px; }
@@ -223,24 +112,35 @@
   <!-- NAVBAR -->
   <nav class="navbar">
     <div class="logo">play<span>count</span><em>v1</em></div>
+    <div class="nav-links">
+      <div class="nav-item">
+        <div class="nav-item-label active" id="nav-tracks">Tracks</div>
+        <div class="nav-dropdown" id="dd-tracks">
+          <div class="drop-item active" onclick="goTo('tracks','recent')">Recently played</div>
+          <div class="drop-item" onclick="goTo('tracks','listened')">Most listened</div>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-item-label" id="nav-artists">Artists</div>
+        <div class="nav-dropdown" id="dd-artists">
+          <div class="drop-item" onclick="goTo('artists','top')">Top artists</div>
+          <div class="drop-item" onclick="goTo('artists','followed')">Recently followed</div>
+          <div class="drop-item" onclick="goTo('artists','all')">All artists</div>
+        </div>
+      </div>
+    </div>
     <div class="nav-right">
       <div class="avatar">JD</div>
       <button class="logout-btn">Log out</button>
     </div>
   </nav>
 
-  <!-- PAGE NAV -->
-  <div class="page-nav">
-    <div class="page-nav-item active" onclick="setPage('tracks')">Tracks</div>
-    <div class="page-nav-item" onclick="setPage('artists')">Artists</div>
-  </div>
-
   <!-- TRACKS PAGE -->
   <div class="page active" id="page-tracks">
     <div class="section-header">
       <div class="pills">
-        <div class="pill active" onclick="setTab('tracks', 'recent', this)">Recently played</div>
-        <div class="pill" onclick="setTab('tracks', 'alltime', this)">All-time top</div>
+        <div class="pill active" id="pill-tracks-recent" onclick="setTab('tracks','recent')">Recently played</div>
+        <div class="pill" id="pill-tracks-listened" onclick="setTab('tracks','listened')">Most listened</div>
       </div>
       <div class="entries-wrap">
         <span class="entries-label">Entries:</span>
@@ -253,12 +153,23 @@
 
     <!-- Recently played -->
     <div class="tab-content active" id="tracks-recent">
+      <div class="subtabs">
+        <div class="subtab active" onclick="setRecentSubtab('all',this)">All</div>
+        <div class="subtab" onclick="setRecentSubtab('liked',this)">Liked</div>
+        <div class="subtab" onclick="setRecentSubtab('notliked',this)">Not liked</div>
+      </div>
       <div class="track-list" id="list-recent"></div>
     </div>
 
-    <!-- All-time top -->
-    <div class="tab-content" id="tracks-alltime">
-      <div class="track-list" id="list-alltime"></div>
+    <!-- Most listened -->
+    <div class="tab-content" id="tracks-listened">
+      <div class="subtabs">
+        <div class="subtab active" onclick="setListenedSubtab('7days',this)">Last 7 days</div>
+        <div class="subtab" onclick="setListenedSubtab('30days',this)">Last 30 days</div>
+        <div class="subtab" onclick="setListenedSubtab('year',this)">Last year</div>
+        <div class="subtab" onclick="setListenedSubtab('alltime',this)">All time</div>
+      </div>
+      <div class="track-list" id="list-listened"></div>
     </div>
   </div>
 
@@ -266,9 +177,9 @@
   <div class="page" id="page-artists">
     <div class="section-header">
       <div class="pills">
-        <div class="pill active" onclick="setTab('artists', 'top', this)">Top artists</div>
-        <div class="pill" onclick="setTab('artists', 'followed', this)">Recently followed</div>
-        <div class="pill" onclick="setTab('artists', 'all', this)">All artists</div>
+        <div class="pill active" id="pill-artists-top" onclick="setTab('artists','top')">Top artists</div>
+        <div class="pill" id="pill-artists-followed" onclick="setTab('artists','followed')">Recently followed</div>
+        <div class="pill" id="pill-artists-all" onclick="setTab('artists','all')">All artists</div>
       </div>
       <div class="entries-wrap">
         <span class="entries-label">Entries:</span>
@@ -282,10 +193,10 @@
     <!-- Top artists -->
     <div class="tab-content active" id="artists-top">
       <div class="subtabs">
-        <div class="subtab active" onclick="setSubtab('top', 'week', this)">This week</div>
-        <div class="subtab" onclick="setSubtab('top', 'month', this)">This month</div>
-        <div class="subtab" onclick="setSubtab('top', 'year', this)">This year</div>
-        <div class="subtab" onclick="setSubtab('top', 'alltime', this)">All time</div>
+        <div class="subtab active" onclick="setSubtab('week',this)">This week</div>
+        <div class="subtab" onclick="setSubtab('month',this)">This month</div>
+        <div class="subtab" onclick="setSubtab('year',this)">This year</div>
+        <div class="subtab" onclick="setSubtab('alltime',this)">All time</div>
       </div>
       <div class="artist-list" id="list-top-artists"></div>
     </div>
@@ -302,115 +213,68 @@
   </div>
 
 </div>
-
 <script>
-  // ── DUMMY DATA ──────────────────────────────────────────────
+  // ── DUMMY DATA ───────────────────────────────────────────────
 
   const recentTracks = [
-    { name: 'Blinding Lights', artist: 'The Weeknd', plays: 41, ago: '2 min ago', pct: 90, color: '#1a3a2a' },
-    { name: 'As It Was', artist: 'Harry Styles', plays: 33, ago: '1 hr ago', pct: 74, color: '#2a1a3a' },
-    { name: 'Stay', artist: 'The Kid LAROI, Justin Bieber', plays: 29, ago: '3 hr ago', pct: 60, color: '#3a2a1a' },
-    { name: 'Heat Waves', artist: 'Glass Animals', plays: 24, ago: 'yesterday', pct: 48, color: '#1a2a3a' },
-    { name: 'Levitating', artist: 'Dua Lipa', plays: 21, ago: 'yesterday', pct: 38, color: '#3a1a2a' },
-    { name: 'Peaches', artist: 'Justin Bieber', plays: 18, ago: '2 days ago', pct: 30, color: '#2a3a2a' },
-    { name: 'good 4 u', artist: 'Olivia Rodrigo', plays: 15, ago: '2 days ago', pct: 24, color: '#3a1a3a' },
-    { name: 'INDUSTRY BABY', artist: 'Lil Nas X, Jack Harlow', plays: 12, ago: '3 days ago', pct: 18, color: '#1a3a3a' },
-    { name: 'Easy On Me', artist: 'Adele', plays: 10, ago: '3 days ago', pct: 14, color: '#3a2a2a' },
-    { name: 'Bad Habits', artist: 'Ed Sheeran', plays: 9, ago: '4 days ago', pct: 11, color: '#2a2a3a' },
-    { name: 'Sunflower', artist: 'Post Malone, Swae Lee', plays: 9, ago: '4 days ago', pct: 11, color: '#3a3a1a' },
-    { name: 'Watermelon Sugar', artist: 'Harry Styles', plays: 8, ago: '4 days ago', pct: 10, color: '#2a1a3a' },
-    { name: 'drivers license', artist: 'Olivia Rodrigo', plays: 8, ago: '5 days ago', pct: 10, color: '#3a1a3a' },
-    { name: 'Montero', artist: 'Lil Nas X', plays: 7, ago: '5 days ago', pct: 9, color: '#3a3a1a' },
-    { name: 'Save Your Tears', artist: 'The Weeknd', plays: 7, ago: '5 days ago', pct: 9, color: '#1a3a2a' },
-    { name: 'Happier Than Ever', artist: 'Billie Eilish', plays: 7, ago: '5 days ago', pct: 9, color: '#1a2a3a' },
-    { name: 'Butter', artist: 'BTS', plays: 6, ago: '6 days ago', pct: 8, color: '#2a3a3a' },
-    { name: 'Kiss Me More', artist: 'Doja Cat ft SZA', plays: 6, ago: '6 days ago', pct: 8, color: '#3a1a2a' },
-    { name: 'Positions', artist: 'Ariana Grande', plays: 6, ago: '6 days ago', pct: 8, color: '#3a2a3a' },
-    { name: 'Leave The Door Open', artist: 'Silk Sonic', plays: 5, ago: '1 week ago', pct: 7, color: '#2a3a1a' },
-    { name: 'Beggin', artist: 'Maneskin', plays: 5, ago: '1 week ago', pct: 7, color: '#1a1a3a' },
-    { name: 'Shivers', artist: 'Ed Sheeran', plays: 5, ago: '1 week ago', pct: 7, color: '#2a2a3a' },
-    { name: 'Need To Know', artist: 'Doja Cat', plays: 5, ago: '1 week ago', pct: 6, color: '#3a1a2a' },
-    { name: 'Telepatia', artist: 'Kali Uchis', plays: 4, ago: '1 week ago', pct: 6, color: '#1a3a1a' },
-    { name: 'Mood', artist: '24kGoldn ft iann dior', plays: 4, ago: '1 week ago', pct: 6, color: '#3a2a1a' },
-    { name: 'Deja Vu', artist: 'Olivia Rodrigo', plays: 4, ago: '8 days ago', pct: 5, color: '#3a1a3a' },
-    { name: 'Traitor', artist: 'Olivia Rodrigo', plays: 4, ago: '8 days ago', pct: 5, color: '#3a1a3a' },
-    { name: 'Therefore I Am', artist: 'Billie Eilish', plays: 4, ago: '9 days ago', pct: 5, color: '#1a2a3a' },
-    { name: 'Dynamite', artist: 'BTS', plays: 3, ago: '9 days ago', pct: 4, color: '#2a3a3a' },
-    { name: 'Golden', artist: 'Harry Styles', plays: 3, ago: '9 days ago', pct: 4, color: '#2a1a3a' },
-    { name: 'Solar Power', artist: 'Lorde', plays: 3, ago: '10 days ago', pct: 4, color: '#1a3a1a' },
-    { name: 'Fancy Like', artist: 'Walker Hayes', plays: 3, ago: '10 days ago', pct: 4, color: '#3a2a1a' },
-    { name: 'Bad Guy', artist: 'Billie Eilish', plays: 3, ago: '10 days ago', pct: 3, color: '#1a2a3a' },
-    { name: 'Essence', artist: 'Wizkid ft Tems', plays: 3, ago: '11 days ago', pct: 3, color: '#2a3a2a' },
-    { name: 'Permission to Dance', artist: 'BTS', plays: 2, ago: '11 days ago', pct: 3, color: '#2a3a3a' },
-    { name: 'Way 2 Sexy', artist: 'Drake', plays: 2, ago: '11 days ago', pct: 3, color: '#3a3a2a' },
-    { name: 'Sexy to Someone', artist: 'Clairo', plays: 2, ago: '12 days ago', pct: 2, color: '#1a2a2a' },
-    { name: 'Woman', artist: 'Doja Cat', plays: 2, ago: '12 days ago', pct: 2, color: '#3a1a2a' },
-    { name: 'Heat', artist: 'Beyoncé', plays: 2, ago: '12 days ago', pct: 2, color: '#3a3a1a' },
-    { name: 'Lemon Drop', artist: 'Diplo', plays: 2, ago: '13 days ago', pct: 2, color: '#2a1a2a' },
-    { name: 'Enchanted', artist: 'Taylor Swift', plays: 2, ago: '13 days ago', pct: 2, color: '#3a2a1a' },
-    { name: 'Fearless', artist: 'Taylor Swift', plays: 1, ago: '13 days ago', pct: 1, color: '#3a2a1a' },
-    { name: 'All Too Well', artist: 'Taylor Swift', plays: 1, ago: '14 days ago', pct: 1, color: '#3a2a1a' },
-    { name: 'exile', artist: 'Taylor Swift ft Bon Iver', plays: 1, ago: '14 days ago', pct: 1, color: '#3a2a1a' },
-    { name: 'Circles', artist: 'Post Malone', plays: 1, ago: '14 days ago', pct: 1, color: '#3a3a1a' },
-    { name: 'Rockstar', artist: 'Post Malone ft 21 Savage', plays: 1, ago: '15 days ago', pct: 1, color: '#3a3a1a' },
-    { name: 'Congratulations', artist: 'Post Malone', plays: 1, ago: '15 days ago', pct: 1, color: '#3a3a1a' },
-    { name: 'White Iverson', artist: 'Post Malone', plays: 1, ago: '15 days ago', pct: 1, color: '#3a3a1a' },
-    { name: 'Psycho', artist: 'Post Malone ft Ty Dolla Sign', plays: 1, ago: '16 days ago', pct: 1, color: '#3a3a1a' },
-    { name: 'Cruel Summer', artist: 'Taylor Swift', plays: 1, ago: '16 days ago', pct: 1, color: '#3a2a1a' },
+    { name: 'Blinding Lights', artist: 'The Weeknd', plays: 41, ago: '2 min ago', pct: 90, color: '#1a3a2a', liked: true },
+    { name: 'As It Was', artist: 'Harry Styles', plays: 33, ago: '1 hr ago', pct: 74, color: '#2a1a3a', liked: true },
+    { name: 'Stay', artist: 'The Kid LAROI, Justin Bieber', plays: 29, ago: '3 hr ago', pct: 60, color: '#3a2a1a', liked: false },
+    { name: 'Heat Waves', artist: 'Glass Animals', plays: 24, ago: 'yesterday', pct: 48, color: '#1a2a3a', liked: true },
+    { name: 'Levitating', artist: 'Dua Lipa', plays: 21, ago: 'yesterday', pct: 38, color: '#3a1a2a', liked: false },
+    { name: 'Peaches', artist: 'Justin Bieber', plays: 18, ago: '2 days ago', pct: 30, color: '#2a3a2a', liked: true },
+    { name: 'good 4 u', artist: 'Olivia Rodrigo', plays: 15, ago: '2 days ago', pct: 24, color: '#3a1a3a', liked: false },
+    { name: 'INDUSTRY BABY', artist: 'Lil Nas X, Jack Harlow', plays: 12, ago: '3 days ago', pct: 18, color: '#1a3a3a', liked: true },
+    { name: 'Easy On Me', artist: 'Adele', plays: 10, ago: '3 days ago', pct: 14, color: '#3a2a2a', liked: false },
+    { name: 'Bad Habits', artist: 'Ed Sheeran', plays: 9, ago: '4 days ago', pct: 11, color: '#2a2a3a', liked: true },
+    { name: 'Sunflower', artist: 'Post Malone, Swae Lee', plays: 9, ago: '4 days ago', pct: 11, color: '#3a3a1a', liked: true },
+    { name: 'Watermelon Sugar', artist: 'Harry Styles', plays: 8, ago: '4 days ago', pct: 10, color: '#2a1a3a', liked: false },
+    { name: 'drivers license', artist: 'Olivia Rodrigo', plays: 8, ago: '5 days ago', pct: 10, color: '#3a1a3a', liked: true },
+    { name: 'Montero', artist: 'Lil Nas X', plays: 7, ago: '5 days ago', pct: 9, color: '#3a3a1a', liked: false },
+    { name: 'Save Your Tears', artist: 'The Weeknd', plays: 7, ago: '5 days ago', pct: 9, color: '#1a3a2a', liked: true },
+    { name: 'Happier Than Ever', artist: 'Billie Eilish', plays: 7, ago: '5 days ago', pct: 9, color: '#1a2a3a', liked: true },
+    { name: 'Butter', artist: 'BTS', plays: 6, ago: '6 days ago', pct: 8, color: '#2a3a3a', liked: false },
+    { name: 'Kiss Me More', artist: 'Doja Cat ft SZA', plays: 6, ago: '6 days ago', pct: 8, color: '#3a1a2a', liked: true },
+    { name: 'Positions', artist: 'Ariana Grande', plays: 6, ago: '6 days ago', pct: 8, color: '#3a2a3a', liked: false },
+    { name: 'Leave The Door Open', artist: 'Silk Sonic', plays: 5, ago: '1 week ago', pct: 7, color: '#2a3a1a', liked: true },
+    { name: 'Beggin', artist: 'Maneskin', plays: 5, ago: '1 week ago', pct: 7, color: '#1a1a3a', liked: false },
+    { name: 'Shivers', artist: 'Ed Sheeran', plays: 5, ago: '1 week ago', pct: 7, color: '#2a2a3a', liked: true },
+    { name: 'Need To Know', artist: 'Doja Cat', plays: 5, ago: '1 week ago', pct: 6, color: '#3a1a2a', liked: false },
+    { name: 'Telepatia', artist: 'Kali Uchis', plays: 4, ago: '1 week ago', pct: 6, color: '#1a3a1a', liked: true },
+    { name: 'Mood', artist: '24kGoldn ft iann dior', plays: 4, ago: '1 week ago', pct: 6, color: '#3a2a1a', liked: false },
+    { name: 'Deja Vu', artist: 'Olivia Rodrigo', plays: 4, ago: '8 days ago', pct: 5, color: '#3a1a3a', liked: true },
+    { name: 'Traitor', artist: 'Olivia Rodrigo', plays: 4, ago: '8 days ago', pct: 5, color: '#3a1a3a', liked: false },
+    { name: 'Therefore I Am', artist: 'Billie Eilish', plays: 4, ago: '9 days ago', pct: 5, color: '#1a2a3a', liked: true },
+    { name: 'Dynamite', artist: 'BTS', plays: 3, ago: '9 days ago', pct: 4, color: '#2a3a3a', liked: false },
+    { name: 'Golden', artist: 'Harry Styles', plays: 3, ago: '9 days ago', pct: 4, color: '#2a1a3a', liked: true },
+    { name: 'Solar Power', artist: 'Lorde', plays: 3, ago: '10 days ago', pct: 4, color: '#1a3a1a', liked: false },
+    { name: 'Fancy Like', artist: 'Walker Hayes', plays: 3, ago: '10 days ago', pct: 4, color: '#3a2a1a', liked: true },
+    { name: 'Bad Guy', artist: 'Billie Eilish', plays: 3, ago: '10 days ago', pct: 3, color: '#1a2a3a', liked: false },
+    { name: 'Essence', artist: 'Wizkid ft Tems', plays: 3, ago: '11 days ago', pct: 3, color: '#2a3a2a', liked: true },
+    { name: 'Permission to Dance', artist: 'BTS', plays: 2, ago: '11 days ago', pct: 3, color: '#2a3a3a', liked: false },
+    { name: 'Way 2 Sexy', artist: 'Drake', plays: 2, ago: '11 days ago', pct: 3, color: '#3a3a2a', liked: true },
+    { name: 'Sexy to Someone', artist: 'Clairo', plays: 2, ago: '12 days ago', pct: 2, color: '#1a2a2a', liked: false },
+    { name: 'Woman', artist: 'Doja Cat', plays: 2, ago: '12 days ago', pct: 2, color: '#3a1a2a', liked: true },
+    { name: 'Heat', artist: 'Beyoncé', plays: 2, ago: '12 days ago', pct: 2, color: '#3a3a1a', liked: false },
+    { name: 'Lemon Drop', artist: 'Diplo', plays: 2, ago: '13 days ago', pct: 2, color: '#2a1a2a', liked: true },
+    { name: 'Enchanted', artist: 'Taylor Swift', plays: 2, ago: '13 days ago', pct: 2, color: '#3a2a1a', liked: false },
+    { name: 'Fearless', artist: 'Taylor Swift', plays: 1, ago: '13 days ago', pct: 1, color: '#3a2a1a', liked: true },
+    { name: 'All Too Well', artist: 'Taylor Swift', plays: 1, ago: '14 days ago', pct: 1, color: '#3a2a1a', liked: false },
+    { name: 'exile', artist: 'Taylor Swift ft Bon Iver', plays: 1, ago: '14 days ago', pct: 1, color: '#3a2a1a', liked: true },
+    { name: 'Circles', artist: 'Post Malone', plays: 1, ago: '14 days ago', pct: 1, color: '#3a3a1a', liked: false },
+    { name: 'Rockstar', artist: 'Post Malone ft 21 Savage', plays: 1, ago: '15 days ago', pct: 1, color: '#3a3a1a', liked: true },
+    { name: 'Congratulations', artist: 'Post Malone', plays: 1, ago: '15 days ago', pct: 1, color: '#3a3a1a', liked: false },
+    { name: 'White Iverson', artist: 'Post Malone', plays: 1, ago: '15 days ago', pct: 1, color: '#3a3a1a', liked: true },
+    { name: 'Psycho', artist: 'Post Malone ft Ty Dolla Sign', plays: 1, ago: '16 days ago', pct: 1, color: '#3a3a1a', liked: false },
+    { name: 'Cruel Summer', artist: 'Taylor Swift', plays: 1, ago: '16 days ago', pct: 1, color: '#3a2a1a', liked: true },
   ];
 
-  const alltimeTracks = [
-    { name: 'Blinding Lights', artist: 'The Weeknd', plays: 147, pct: 94, color: '#1a3a2a' },
-    { name: 'As It Was', artist: 'Harry Styles', plays: 108, pct: 76, color: '#2a1a3a' },
-    { name: 'Levitating', artist: 'Dua Lipa', plays: 84, pct: 58, color: '#3a1a2a' },
-    { name: 'Stay', artist: 'The Kid LAROI', plays: 65, pct: 44, color: '#3a2a1a' },
-    { name: 'good 4 u', artist: 'Olivia Rodrigo', plays: 47, pct: 32, color: '#3a1a3a' },
-    { name: 'Heat Waves', artist: 'Glass Animals', plays: 38, pct: 26, color: '#1a2a3a' },
-    { name: 'Peaches', artist: 'Justin Bieber', plays: 31, pct: 20, color: '#2a3a2a' },
-    { name: 'Easy On Me', artist: 'Adele', plays: 27, pct: 17, color: '#3a2a2a' },
-    { name: 'Bad Habits', artist: 'Ed Sheeran', plays: 22, pct: 14, color: '#2a2a3a' },
-    { name: 'INDUSTRY BABY', artist: 'Lil Nas X, Jack Harlow', plays: 18, pct: 11, color: '#1a3a3a' },
-    { name: 'Sunflower', artist: 'Post Malone, Swae Lee', plays: 16, pct: 10, color: '#3a3a1a' },
-    { name: 'Cruel Summer', artist: 'Taylor Swift', plays: 15, pct: 9, color: '#3a2a1a' },
-    { name: 'drivers license', artist: 'Olivia Rodrigo', plays: 14, pct: 9, color: '#3a1a3a' },
-    { name: 'Watermelon Sugar', artist: 'Harry Styles', plays: 13, pct: 8, color: '#2a1a3a' },
-    { name: 'Save Your Tears', artist: 'The Weeknd', plays: 12, pct: 8, color: '#1a3a2a' },
-    { name: 'Happier Than Ever', artist: 'Billie Eilish', plays: 11, pct: 7, color: '#1a2a3a' },
-    { name: 'Montero', artist: 'Lil Nas X', plays: 11, pct: 7, color: '#3a3a1a' },
-    { name: 'Butter', artist: 'BTS', plays: 10, pct: 6, color: '#2a3a3a' },
-    { name: 'Kiss Me More', artist: 'Doja Cat ft SZA', plays: 9, pct: 6, color: '#3a1a2a' },
-    { name: 'Positions', artist: 'Ariana Grande', plays: 9, pct: 6, color: '#3a2a3a' },
-    { name: 'Leave The Door Open', artist: 'Silk Sonic', plays: 8, pct: 5, color: '#2a3a1a' },
-    { name: 'Beggin', artist: 'Maneskin', plays: 8, pct: 5, color: '#1a1a3a' },
-    { name: 'Shivers', artist: 'Ed Sheeran', plays: 7, pct: 5, color: '#2a2a3a' },
-    { name: 'Need To Know', artist: 'Doja Cat', plays: 7, pct: 4, color: '#3a1a2a' },
-    { name: 'Telepatia', artist: 'Kali Uchis', plays: 6, pct: 4, color: '#1a3a1a' },
-    { name: 'Mood', artist: '24kGoldn ft iann dior', plays: 6, pct: 4, color: '#3a2a1a' },
-    { name: 'Deja Vu', artist: 'Olivia Rodrigo', plays: 5, pct: 3, color: '#3a1a3a' },
-    { name: 'Traitor', artist: 'Olivia Rodrigo', plays: 5, pct: 3, color: '#3a1a3a' },
-    { name: 'Therefore I Am', artist: 'Billie Eilish', plays: 5, pct: 3, color: '#1a2a3a' },
-    { name: 'Dynamite', artist: 'BTS', plays: 4, pct: 2, color: '#2a3a3a' },
-    { name: 'Golden', artist: 'Harry Styles', plays: 4, pct: 2, color: '#2a1a3a' },
-    { name: 'Solar Power', artist: 'Lorde', plays: 4, pct: 2, color: '#1a3a1a' },
-    { name: 'Fancy Like', artist: 'Walker Hayes', plays: 3, pct: 2, color: '#3a2a1a' },
-    { name: 'Bad Guy', artist: 'Billie Eilish', plays: 3, pct: 2, color: '#1a2a3a' },
-    { name: 'Essence', artist: 'Wizkid ft Tems', plays: 3, pct: 2, color: '#2a3a2a' },
-    { name: 'Permission to Dance', artist: 'BTS', plays: 3, pct: 1, color: '#2a3a3a' },
-    { name: 'Way 2 Sexy', artist: 'Drake', plays: 2, pct: 1, color: '#3a3a2a' },
-    { name: 'Sexy to Someone', artist: 'Clairo', plays: 2, pct: 1, color: '#1a2a2a' },
-    { name: 'Woman', artist: 'Doja Cat', plays: 2, pct: 1, color: '#3a1a2a' },
-    { name: 'Heat', artist: 'Beyoncé', plays: 2, pct: 1, color: '#3a3a1a' },
-    { name: 'Lemon Drop', artist: 'Diplo', plays: 2, pct: 1, color: '#2a1a2a' },
-    { name: 'Enchanted', artist: 'Taylor Swift', plays: 1, pct: 1, color: '#3a2a1a' },
-    { name: 'Fearless', artist: 'Taylor Swift', plays: 1, pct: 1, color: '#3a2a1a' },
-    { name: 'All Too Well', artist: 'Taylor Swift', plays: 1, pct: 1, color: '#3a2a1a' },
-    { name: 'exile', artist: 'Taylor Swift ft Bon Iver', plays: 1, pct: 1, color: '#3a2a1a' },
-    { name: 'Circles', artist: 'Post Malone', plays: 1, pct: 1, color: '#3a3a1a' },
-    { name: 'Rockstar', artist: 'Post Malone ft 21 Savage', plays: 1, pct: 1, color: '#3a3a1a' },
-    { name: 'Congratulations', artist: 'Post Malone', plays: 1, pct: 1, color: '#3a3a1a' },
-    { name: 'White Iverson', artist: 'Post Malone', plays: 1, pct: 1, color: '#3a3a1a' },
-    { name: 'Psycho', artist: 'Post Malone ft Ty Dolla Sign', plays: 1, pct: 1, color: '#3a3a1a' },
-  ];
+  const listenedData = {
+    '7days':  [{ name: 'Blinding Lights', artist: 'The Weeknd', plays: 41, pct: 90, color: '#1a3a2a' },{ name: 'As It Was', artist: 'Harry Styles', plays: 33, pct: 74, color: '#2a1a3a' },{ name: 'Heat Waves', artist: 'Glass Animals', plays: 24, pct: 48, color: '#1a2a3a' },{ name: 'Levitating', artist: 'Dua Lipa', plays: 21, pct: 38, color: '#3a1a2a' },{ name: 'Peaches', artist: 'Justin Bieber', plays: 18, pct: 30, color: '#2a3a2a' },{ name: 'good 4 u', artist: 'Olivia Rodrigo', plays: 15, pct: 24, color: '#3a1a3a' },{ name: 'INDUSTRY BABY', artist: 'Lil Nas X', plays: 12, pct: 18, color: '#1a3a3a' },{ name: 'Easy On Me', artist: 'Adele', plays: 10, pct: 14, color: '#3a2a2a' },{ name: 'Bad Habits', artist: 'Ed Sheeran', plays: 9, pct: 11, color: '#2a2a3a' },{ name: 'Sunflower', artist: 'Post Malone', plays: 9, pct: 11, color: '#3a3a1a' }],
+    '30days': [{ name: 'Blinding Lights', artist: 'The Weeknd', plays: 98, pct: 94, color: '#1a3a2a' },{ name: 'As It Was', artist: 'Harry Styles', plays: 76, pct: 76, color: '#2a1a3a' },{ name: 'Levitating', artist: 'Dua Lipa', plays: 54, pct: 55, color: '#3a1a2a' },{ name: 'Stay', artist: 'The Kid LAROI', plays: 43, pct: 44, color: '#3a2a1a' },{ name: 'good 4 u', artist: 'Olivia Rodrigo', plays: 37, pct: 32, color: '#3a1a3a' },{ name: 'Heat Waves', artist: 'Glass Animals', plays: 28, pct: 26, color: '#1a2a3a' },{ name: 'Peaches', artist: 'Justin Bieber', plays: 21, pct: 20, color: '#2a3a2a' },{ name: 'Easy On Me', artist: 'Adele', plays: 17, pct: 17, color: '#3a2a2a' },{ name: 'Bad Habits', artist: 'Ed Sheeran', plays: 12, pct: 14, color: '#2a2a3a' },{ name: 'INDUSTRY BABY', artist: 'Lil Nas X', plays: 8, pct: 11, color: '#1a3a3a' }],
+    'year':   [{ name: 'Blinding Lights', artist: 'The Weeknd', plays: 312, pct: 94, color: '#1a3a2a' },{ name: 'As It Was', artist: 'Harry Styles', plays: 241, pct: 76, color: '#2a1a3a' },{ name: 'Levitating', artist: 'Dua Lipa', plays: 198, pct: 58, color: '#3a1a2a' },{ name: 'Stay', artist: 'The Kid LAROI', plays: 165, pct: 44, color: '#3a2a1a' },{ name: 'good 4 u', artist: 'Olivia Rodrigo', plays: 134, pct: 32, color: '#3a1a3a' },{ name: 'Heat Waves', artist: 'Glass Animals', plays: 98, pct: 26, color: '#1a2a3a' },{ name: 'Peaches', artist: 'Justin Bieber', plays: 76, pct: 20, color: '#2a3a2a' },{ name: 'Easy On Me', artist: 'Adele', plays: 54, pct: 17, color: '#3a2a2a' },{ name: 'Bad Habits', artist: 'Ed Sheeran', plays: 43, pct: 14, color: '#2a2a3a' },{ name: 'INDUSTRY BABY', artist: 'Lil Nas X', plays: 31, pct: 11, color: '#1a3a3a' }],
+    'alltime':[{ name: 'Blinding Lights', artist: 'The Weeknd', plays: 147, pct: 94, color: '#1a3a2a' },{ name: 'As It Was', artist: 'Harry Styles', plays: 108, pct: 76, color: '#2a1a3a' },{ name: 'Levitating', artist: 'Dua Lipa', plays: 84, pct: 58, color: '#3a1a2a' },{ name: 'Stay', artist: 'The Kid LAROI', plays: 65, pct: 44, color: '#3a2a1a' },{ name: 'good 4 u', artist: 'Olivia Rodrigo', plays: 47, pct: 32, color: '#3a1a3a' },{ name: 'Heat Waves', artist: 'Glass Animals', plays: 38, pct: 26, color: '#1a2a3a' },{ name: 'Peaches', artist: 'Justin Bieber', plays: 31, pct: 20, color: '#2a3a2a' },{ name: 'Easy On Me', artist: 'Adele', plays: 27, pct: 17, color: '#3a2a2a' },{ name: 'Bad Habits', artist: 'Ed Sheeran', plays: 22, pct: 14, color: '#2a2a3a' },{ name: 'INDUSTRY BABY', artist: 'Lil Nas X', plays: 18, pct: 11, color: '#1a3a3a' },{ name: 'Sunflower', artist: 'Post Malone', plays: 16, pct: 10, color: '#3a3a1a' },{ name: 'Cruel Summer', artist: 'Taylor Swift', plays: 15, pct: 9, color: '#3a2a1a' },{ name: 'drivers license', artist: 'Olivia Rodrigo', plays: 14, pct: 9, color: '#3a1a3a' },{ name: 'Watermelon Sugar', artist: 'Harry Styles', plays: 13, pct: 8, color: '#2a1a3a' },{ name: 'Save Your Tears', artist: 'The Weeknd', plays: 12, pct: 8, color: '#1a3a2a' },{ name: 'Happier Than Ever', artist: 'Billie Eilish', plays: 11, pct: 7, color: '#1a2a3a' },{ name: 'Montero', artist: 'Lil Nas X', plays: 11, pct: 7, color: '#3a3a1a' },{ name: 'Butter', artist: 'BTS', plays: 10, pct: 6, color: '#2a3a3a' },{ name: 'Kiss Me More', artist: 'Doja Cat', plays: 9, pct: 6, color: '#3a1a2a' },{ name: 'Positions', artist: 'Ariana Grande', plays: 9, pct: 6, color: '#3a2a3a' },{ name: 'Leave The Door Open', artist: 'Silk Sonic', plays: 8, pct: 5, color: '#2a3a1a' },{ name: 'Beggin', artist: 'Maneskin', plays: 8, pct: 5, color: '#1a1a3a' },{ name: 'Shivers', artist: 'Ed Sheeran', plays: 7, pct: 5, color: '#2a2a3a' },{ name: 'Need To Know', artist: 'Doja Cat', plays: 7, pct: 4, color: '#3a1a2a' },{ name: 'Telepatia', artist: 'Kali Uchis', plays: 6, pct: 4, color: '#1a3a1a' },{ name: 'Mood', artist: '24kGoldn', plays: 6, pct: 4, color: '#3a2a1a' },{ name: 'Deja Vu', artist: 'Olivia Rodrigo', plays: 5, pct: 3, color: '#3a1a3a' },{ name: 'Traitor', artist: 'Olivia Rodrigo', plays: 5, pct: 3, color: '#3a1a3a' },{ name: 'Therefore I Am', artist: 'Billie Eilish', plays: 5, pct: 3, color: '#1a2a3a' },{ name: 'Dynamite', artist: 'BTS', plays: 4, pct: 2, color: '#2a3a3a' },{ name: 'Golden', artist: 'Harry Styles', plays: 4, pct: 2, color: '#2a1a3a' },{ name: 'Solar Power', artist: 'Lorde', plays: 4, pct: 2, color: '#1a3a1a' },{ name: 'Fancy Like', artist: 'Walker Hayes', plays: 3, pct: 2, color: '#3a2a1a' },{ name: 'Bad Guy', artist: 'Billie Eilish', plays: 3, pct: 2, color: '#1a2a3a' },{ name: 'Essence', artist: 'Wizkid', plays: 3, pct: 2, color: '#2a3a2a' },{ name: 'Permission to Dance', artist: 'BTS', plays: 3, pct: 1, color: '#2a3a3a' },{ name: 'Way 2 Sexy', artist: 'Drake', plays: 2, pct: 1, color: '#3a3a2a' },{ name: 'Woman', artist: 'Doja Cat', plays: 2, pct: 1, color: '#3a1a2a' },{ name: 'Enchanted', artist: 'Taylor Swift', plays: 1, pct: 1, color: '#3a2a1a' },{ name: 'Cruel Summer 2', artist: 'Taylor Swift', plays: 1, pct: 1, color: '#3a2a1a' },{ name: 'Circles', artist: 'Post Malone', plays: 1, pct: 1, color: '#3a3a1a' },{ name: 'Rockstar', artist: 'Post Malone', plays: 1, pct: 1, color: '#3a3a1a' },{ name: 'Congratulations', artist: 'Post Malone', plays: 1, pct: 1, color: '#3a3a1a' },{ name: 'White Iverson', artist: 'Post Malone', plays: 1, pct: 1, color: '#3a3a1a' },{ name: 'Psycho', artist: 'Post Malone', plays: 1, pct: 1, color: '#3a3a1a' },{ name: 'exile', artist: 'Taylor Swift', plays: 1, pct: 1, color: '#3a2a1a' },{ name: 'All Too Well', artist: 'Taylor Swift', plays: 1, pct: 1, color: '#3a2a1a' },{ name: 'Fearless', artist: 'Taylor Swift', plays: 1, pct: 1, color: '#3a2a1a' },{ name: 'Lemon Drop', artist: 'Diplo', plays: 1, pct: 1, color: '#2a1a2a' },{ name: 'Heat', artist: 'Beyoncé', plays: 1, pct: 1, color: '#3a3a1a' }],
+  };
 
   const topArtistsData = {
     week:    [{ name: 'The Weeknd', plays: 24, color: '#1a3a2a' },{ name: 'Harry Styles', plays: 18, color: '#2a1a3a' },{ name: 'Dua Lipa', plays: 15, color: '#3a1a2a' },{ name: 'Taylor Swift', plays: 11, color: '#3a2a1a' },{ name: 'Olivia Rodrigo', plays: 8, color: '#3a1a3a' },{ name: 'Billie Eilish', plays: 7, color: '#1a2a3a' },{ name: 'Post Malone', plays: 6, color: '#3a3a1a' },{ name: 'Ed Sheeran', plays: 5, color: '#2a2a3a' },{ name: 'Glass Animals', plays: 4, color: '#1a2a3a' },{ name: 'Justin Bieber', plays: 4, color: '#2a3a2a' },{ name: 'Doja Cat', plays: 3, color: '#3a1a2a' },{ name: 'Ariana Grande', plays: 3, color: '#3a2a3a' },{ name: 'BTS', plays: 3, color: '#2a3a3a' },{ name: 'Lil Nas X', plays: 2, color: '#3a3a1a' },{ name: 'Adele', plays: 2, color: '#3a2a2a' },{ name: 'SZA', plays: 2, color: '#3a2a1a' },{ name: 'Drake', plays: 2, color: '#3a3a2a' },{ name: 'Silk Sonic', plays: 1, color: '#2a3a1a' },{ name: 'Maneskin', plays: 1, color: '#1a1a3a' },{ name: 'Kali Uchis', plays: 1, color: '#1a3a1a' }],
@@ -443,98 +307,66 @@
   ];
 
   const allArtists = [
-    { name: 'Adele', color: '#3a2a2a' },
-    { name: 'Ariana Grande', color: '#3a2a3a' },
-    { name: 'Beyoncé', color: '#3a3a1a' },
-    { name: 'Billie Eilish', color: '#1a2a3a' },
-    { name: 'BTS', color: '#2a3a3a' },
-    { name: 'Charli XCX', color: '#1a3a2a' },
-    { name: 'Clairo', color: '#1a2a2a' },
-    { name: 'Diplo', color: '#2a1a2a' },
-    { name: 'Doja Cat', color: '#3a1a2a' },
-    { name: 'Drake', color: '#3a3a2a' },
-    { name: 'Dua Lipa', color: '#3a1a2a' },
-    { name: 'Ed Sheeran', color: '#2a2a3a' },
-    { name: 'Glass Animals', color: '#1a2a3a' },
-    { name: 'Harry Styles', color: '#2a1a3a' },
-    { name: 'Jack Harlow', color: '#1a3a3a' },
-    { name: 'Justin Bieber', color: '#2a3a2a' },
-    { name: 'Kali Uchis', color: '#1a3a1a' },
-    { name: 'Lil Nas X', color: '#3a3a1a' },
-    { name: 'Lorde', color: '#1a3a1a' },
-    { name: 'Maneskin', color: '#1a1a3a' },
-    { name: 'Olivia Rodrigo', color: '#3a1a3a' },
-    { name: 'Post Malone', color: '#3a3a1a' },
-    { name: 'Sabrina Carpenter', color: '#2a3a1a' },
-    { name: 'Silk Sonic', color: '#2a3a1a' },
-    { name: 'SZA', color: '#3a2a1a' },
-    { name: 'Taylor Swift', color: '#3a2a1a' },
-    { name: 'Tems', color: '#1a3a2a' },
-    { name: 'The Weeknd', color: '#1a3a2a' },
-    { name: 'Walker Hayes', color: '#3a2a1a' },
-    { name: 'Wizkid', color: '#2a3a2a' },
+    { name: 'Adele', color: '#3a2a2a' },{ name: 'Ariana Grande', color: '#3a2a3a' },{ name: 'Beyoncé', color: '#3a3a1a' },
+    { name: 'Billie Eilish', color: '#1a2a3a' },{ name: 'BTS', color: '#2a3a3a' },{ name: 'Charli XCX', color: '#1a3a2a' },
+    { name: 'Clairo', color: '#1a2a2a' },{ name: 'Diplo', color: '#2a1a2a' },{ name: 'Doja Cat', color: '#3a1a2a' },
+    { name: 'Drake', color: '#3a3a2a' },{ name: 'Dua Lipa', color: '#3a1a2a' },{ name: 'Ed Sheeran', color: '#2a2a3a' },
+    { name: 'Glass Animals', color: '#1a2a3a' },{ name: 'Harry Styles', color: '#2a1a3a' },{ name: 'Jack Harlow', color: '#1a3a3a' },
+    { name: 'Justin Bieber', color: '#2a3a2a' },{ name: 'Kali Uchis', color: '#1a3a1a' },{ name: 'Lil Nas X', color: '#3a3a1a' },
+    { name: 'Lorde', color: '#1a3a1a' },{ name: 'Maneskin', color: '#1a1a3a' },{ name: 'Olivia Rodrigo', color: '#3a1a3a' },
+    { name: 'Post Malone', color: '#3a3a1a' },{ name: 'Sabrina Carpenter', color: '#2a3a1a' },{ name: 'Silk Sonic', color: '#2a3a1a' },
+    { name: 'SZA', color: '#3a2a1a' },{ name: 'Taylor Swift', color: '#3a2a1a' },{ name: 'Tems', color: '#1a3a2a' },
+    { name: 'The Weeknd', color: '#1a3a2a' },{ name: 'Walker Hayes', color: '#3a2a1a' },{ name: 'Wizkid', color: '#2a3a2a' },
   ];
 
   // ── STATE ────────────────────────────────────────────────────
-
-  let state = {
+  const state = {
     page: 'tracks',
     tracksTab: 'recent',
     artistsTab: 'top',
     topSubtab: 'week',
+    listenedSubtab: '7days',
+    recentSubtab: 'all',
     entries: { tracks: 20, artists: 20 },
   };
 
   // ── RENDER ───────────────────────────────────────────────────
-
-  function renderTrackRow(t, i, isAlltime) {
-    return `
-      <div class="track-row">
-        <div class="track-num">${i + 1}</div>
-        <div class="track-thumb" style="background:${t.color}"></div>
-        <div class="track-info">
-          <div class="track-name">${t.name}</div>
-          <div class="track-artist">${t.artist}</div>
-          <div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${isAlltime ? 'bar-amber' : 'bar-green'}" style="width:${t.pct}%"></div></div></div>
-        </div>
-        <div class="track-right">
-          <div class="play-count ${isAlltime ? 'amber' : ''}">${t.plays}</div>
-          <div class="plays-label">plays</div>
-          ${isAlltime ? '<div class="badge-alltime">all-time</div>' : `<div class="time-ago">${t.ago}</div>`}
-        </div>
-      </div>`;
+  function renderTrackRow(t, i, isListened) {
+    return `<div class="track-row">
+      <div class="track-num">${i+1}</div>
+      <div class="track-thumb" style="background:${t.color}"></div>
+      <div class="track-info">
+        <div class="track-name">${t.name}</div>
+        <div class="track-artist">${t.artist}</div>
+        <div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${isListened?'bar-amber':'bar-green'}" style="width:${t.pct}%"></div></div></div>
+      </div>
+      <div class="track-right">
+        <div class="play-count ${isListened?'amber':''}">${t.plays}</div>
+        <div class="plays-label">plays</div>
+        ${isListened ? '<div class="badge-alltime">top</div>' : `<div class="time-ago">${t.ago}</div>`}
+      </div>
+    </div>`;
   }
 
-  function renderArtistRow(a, i) {
-    return `
-      <div class="artist-row">
-        <div class="artist-thumb" style="background:${a.color}"></div>
-        <div class="artist-info">
-          <div class="artist-name">${a.name}</div>
-          ${a.plays !== undefined ? '' : `<div class="artist-sub">${a.followedAgo || ''}</div>`}
-        </div>
-        ${a.plays !== undefined
-          ? `<div class="track-right"><div class="play-count">${a.plays}</div><div class="plays-label">plays</div></div>`
-          : `<div class="badge-following">following</div>`
-        }
-      </div>`;
+  function renderArtistRow(a) {
+    return `<div class="artist-row">
+      <div class="artist-thumb" style="background:${a.color}"></div>
+      <div class="artist-info">
+        <div class="artist-name">${a.name}</div>
+        ${a.followedAgo ? `<div class="artist-sub">${a.followedAgo}</div>` : ''}
+      </div>
+      ${a.plays !== undefined
+        ? `<div class="track-right"><div class="play-count">${a.plays}</div><div class="plays-label">plays</div></div>`
+        : `<div class="badge-following">following</div>`}
+    </div>`;
   }
 
   function renderAllArtists(list) {
-    let html = '';
-    let lastLetter = '';
+    let html = '', last = '';
     list.forEach(a => {
-      const letter = a.name[0].toUpperCase();
-      if (letter !== lastLetter) {
-        html += `<div class="letter-divider">${letter}</div>`;
-        lastLetter = letter;
-      }
-      html += `
-        <div class="artist-row">
-          <div class="artist-thumb" style="background:${a.color}"></div>
-          <div class="artist-name">${a.name}</div>
-          <div class="badge-following">following</div>
-        </div>`;
+      const l = a.name[0].toUpperCase();
+      if (l !== last) { html += `<div class="letter-divider">${l}</div>`; last = l; }
+      html += `<div class="artist-row"><div class="artist-thumb" style="background:${a.color}"></div><div class="artist-name">${a.name}</div><div class="badge-following">following</div></div>`;
     });
     return html;
   }
@@ -542,53 +374,65 @@
   function render() {
     const n = state.entries;
 
-    // Recent tracks
-    document.getElementById('list-recent').innerHTML =
-      recentTracks.slice(0, n.tracks).map((t, i) => renderTrackRow(t, i, false)).join('');
+    // Recently played — filter by liked/notliked
+    let recent = recentTracks.slice(0, n.tracks);
+    if (state.recentSubtab === 'liked') recent = recentTracks.filter(t => t.liked).slice(0, n.tracks);
+    if (state.recentSubtab === 'notliked') recent = recentTracks.filter(t => !t.liked).slice(0, n.tracks);
+    document.getElementById('list-recent').innerHTML = recent.map((t, i) => renderTrackRow(t, i, false)).join('');
 
-    // All-time tracks
-    document.getElementById('list-alltime').innerHTML =
-      alltimeTracks.slice(0, n.tracks).map((t, i) => renderTrackRow(t, i, true)).join('');
+    // Most listened
+    const ld = listenedData[state.listenedSubtab] || listenedData['7days'];
+    document.getElementById('list-listened').innerHTML = ld.slice(0, n.tracks).map((t, i) => renderTrackRow(t, i, true)).join('');
 
     // Top artists
-    const topData = topArtistsData[state.topSubtab] || topArtistsData.week;
-    document.getElementById('list-top-artists').innerHTML =
-      topData.slice(0, n.artists).map((a, i) => renderArtistRow(a, i)).join('');
+    document.getElementById('list-top-artists').innerHTML = (topArtistsData[state.topSubtab] || topArtistsData.week).slice(0, n.artists).map(renderArtistRow).join('');
 
     // Followed
-    document.getElementById('list-followed').innerHTML =
-      followedArtists.slice(0, n.artists).map((a, i) => renderArtistRow(a, i)).join('');
+    document.getElementById('list-followed').innerHTML = followedArtists.slice(0, n.artists).map(renderArtistRow).join('');
 
-    // All artists
-    document.getElementById('list-all-artists').innerHTML =
-      renderAllArtists(allArtists.slice(0, n.artists));
+    // All artists — no entries limit
+    document.getElementById('list-all-artists').innerHTML = renderAllArtists(allArtists);
   }
 
   // ── NAVIGATION ───────────────────────────────────────────────
-
-  function setPage(page) {
-    state.page = page;
+  function goTo(page, tab) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.page-nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('page-' + page).classList.add('active');
-    document.querySelectorAll('.page-nav-item').forEach(n => {
-      if (n.textContent.toLowerCase() === page) n.classList.add('active');
-    });
+    document.getElementById('nav-tracks').classList.toggle('active', page === 'tracks');
+    document.getElementById('nav-artists').classList.toggle('active', page === 'artists');
+    state.page = page;
+    setTab(page, tab);
+    window.location.hash = page + '/' + tab;
   }
 
-  function setTab(page, tab, el) {
+  function setTab(page, tab) {
     if (page === 'tracks') state.tracksTab = tab;
     else state.artistsTab = tab;
-    el.closest('.section-header').querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-    el.classList.add('active');
-    const pageEl = document.getElementById('page-' + page);
-    pageEl.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.getElementById(page + '-' + tab).classList.add('active');
+    document.querySelectorAll('#page-' + page + ' .pill').forEach(p => p.classList.remove('active'));
+    const pill = document.getElementById('pill-' + page + '-' + tab);
+    if (pill) pill.classList.add('active');
+    document.querySelectorAll('#page-' + page + ' .tab-content').forEach(t => t.classList.remove('active'));
+    const tc = document.getElementById(page + '-' + tab);
+    if (tc) tc.classList.add('active');
     render();
   }
 
-  function setSubtab(group, key, el) {
+  function setSubtab(key, el) {
     state.topSubtab = key;
+    el.closest('.subtabs').querySelectorAll('.subtab').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    render();
+  }
+
+  function setListenedSubtab(key, el) {
+    state.listenedSubtab = key;
+    el.closest('.subtabs').querySelectorAll('.subtab').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    render();
+  }
+
+  function setRecentSubtab(key, el) {
+    state.recentSubtab = key;
     el.closest('.subtabs').querySelectorAll('.subtab').forEach(s => s.classList.remove('active'));
     el.classList.add('active');
     render();
@@ -599,8 +443,20 @@
     render();
   }
 
-  // ── INIT ─────────────────────────────────────────────────────
-  render();
+  // ── INIT from hash ────────────────────────────────────────────
+  function initFromHash() {
+    const hash = window.location.hash.replace('#', '');
+    const [page, tab] = hash.split('/');
+    const valid = { tracks: ['recent', 'listened'], artists: ['top', 'followed', 'all'] };
+    if (page && valid[page]) {
+      goTo(page, (tab && valid[page].includes(tab)) ? tab : valid[page][0]);
+    } else {
+      goTo('tracks', 'recent');
+    }
+  }
+
+  window.addEventListener('hashchange', initFromHash);
+  initFromHash();
 </script>
 </body>
 </html>
