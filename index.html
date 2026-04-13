@@ -111,17 +111,17 @@
 
   <!-- NAVBAR -->
   <nav class="navbar">
-    <div class="logo">play<span>count</span><em>v1</em></div>
+    <div class="logo">play<span>count</span><em>v2</em></div>
     <div class="nav-links">
       <div class="nav-item">
-        <div class="nav-item-label active" id="nav-tracks">Tracks</div>
-        <div class="nav-dropdown" id="dd-tracks">
+        <div class="nav-item-label active" id="nav-tracks" onclick="goTo('tracks','recent')" ontouchstart="toggleDropdown('dd-tracks', event)">Tracks</div>
+        <div class="nav-dropdown" id="dd-tracks" >
           <div class="drop-item active" onclick="goTo('tracks','recent')">Recently played</div>
           <div class="drop-item" onclick="goTo('tracks','listened')">Most listened</div>
         </div>
       </div>
       <div class="nav-item">
-        <div class="nav-item-label" id="nav-artists">Artists</div>
+        <div class="nav-item-label" id="nav-artists" onclick="goTo('artists','top')" ontouchstart="toggleDropdown('dd-artists', event)">Artists</div>
         <div class="nav-dropdown" id="dd-artists">
           <div class="drop-item" onclick="goTo('artists','top')">Top artists</div>
           <div class="drop-item" onclick="goTo('artists','followed')">Recently followed</div>
@@ -166,7 +166,7 @@
       <div class="subtabs">
         <div class="subtab active" onclick="setListenedSubtab('7days',this)">Last 7 days</div>
         <div class="subtab" onclick="setListenedSubtab('30days',this)">Last 30 days</div>
-        <div class="subtab" onclick="setListenedSubtab('year',this)">Last year</div>
+        <div class="subtab" onclick="setListenedSubtab('year',this)">This year</div>
         <div class="subtab" onclick="setListenedSubtab('alltime',this)">All time</div>
       </div>
       <div class="track-list" id="list-listened"></div>
@@ -181,7 +181,7 @@
         <div class="pill" id="pill-artists-followed" onclick="setTab('artists','followed')">Recently followed</div>
         <div class="pill" id="pill-artists-all" onclick="setTab('artists','all')">All artists</div>
       </div>
-      <div class="entries-wrap">
+      <div class="entries-wrap" id="artists-entries-wrap">
         <span class="entries-label">Entries:</span>
         <select class="entries-select" onchange="setEntries('artists', this.value)">
           <option value="20">20</option>
@@ -403,6 +403,14 @@
     state.page = page;
     setTab(page, tab);
     window.location.hash = page + '/' + tab;
+    document.querySelectorAll('.nav-dropdown').forEach(d => {
+  d.style.display = 'none';
+  setTimeout(() => d.style.display = '', 300);
+});
+    document.querySelectorAll('.nav-dropdown').forEach(d => {
+  d.style.display = 'none';
+  setTimeout(() => d.style.display = '', 300);
+});
   }
 
   function setTab(page, tab) {
@@ -414,6 +422,9 @@
     document.querySelectorAll('#page-' + page + ' .tab-content').forEach(t => t.classList.remove('active'));
     const tc = document.getElementById(page + '-' + tab);
     if (tc) tc.classList.add('active');
+    if (page === 'artists') {
+  document.getElementById('artists-entries-wrap').style.display = tab === 'all' ? 'none' : 'flex';
+}
     render();
   }
 
@@ -442,6 +453,19 @@
     state.entries[page] = parseInt(val);
     render();
   }
+  function toggleDropdown(id, e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const dd = document.getElementById(id);
+  const isOpen = dd.style.display === 'block';
+  document.querySelectorAll('.nav-dropdown').forEach(d => d.style.display = '');
+  if (!isOpen) dd.style.display = 'block';
+}
+document.addEventListener('touchstart', function(e) {
+  if (!e.target.closest('.nav-item')) {
+    document.querySelectorAll('.nav-dropdown').forEach(d => d.style.display = '');
+  }
+});
 
   // ── INIT from hash ────────────────────────────────────────────
   function initFromHash() {
