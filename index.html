@@ -10,7 +10,7 @@
   .app { max-width: 1200px; margin: 0 auto; }
 
   /* NAVBAR */
-  .navbar { display: flex; align-items: center; padding: 0 24px; height: 52px; gap: 32px; border-bottom: 0.5px solid rgba(255,255,255,0.08); background: #0d0d0d; position: sticky; top: 0; z-index: 100; }
+  .navbar { display: flex; align-items: center; padding: 0 24px; height: 52px; gap: 24px; border-bottom: 0.5px solid rgba(255,255,255,0.08); background: #0d0d0d; position: sticky; top: 0; z-index: 100; }
   .logo { font-size: 18px; font-weight: 500; letter-spacing: -0.02em; flex-shrink: 0; }
   .logo span { color: #1DB954; }
   .logo em { font-size: 11px; font-weight: 400; color: #F97316; margin-left: 6px; font-style: normal; }
@@ -18,7 +18,7 @@
   /* NAV LINKS */
   .nav-links { display: flex; align-items: center; flex: 1; }
   .nav-item { position: relative; }
-  .nav-item-label { font-size: 13px; padding: 0 14px; height: 52px; display: flex; align-items: center; color: #666; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; white-space: nowrap; user-select: none; }
+  .nav-item-label { font-size: 13px; padding: 0 12px; height: 52px; display: flex; align-items: center; color: #666; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; white-space: nowrap; user-select: none; }
   .nav-item-label:hover { color: #fff; }
   .nav-item-label.active { color: #fff; border-bottom: 2px solid #1DB954; }
 
@@ -91,19 +91,79 @@
   .artist-sub { font-size: 11px; color: #555; margin-top: 1px; }
   .badge-following { font-size: 10px; padding: 2px 9px; border-radius: 20px; background: rgba(29,185,84,0.15); color: #1DB954; font-weight: 500; flex-shrink: 0; }
   .letter-divider { font-size: 11px; color: #444; font-weight: 500; padding: 8px 12px 4px; letter-spacing: 0.06em; }
+  .liked-count { font-size: 10px; color: #444; flex-shrink: 0; margin-right: 8px; }
+
+  /* SEARCH */
+  .search-wrap { padding: 0 24px 12px; }
+  .search-input { width: 100%; background: #111; border: 0.5px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 14px; font-size: 13px; color: #fff; outline: none; }
+  .search-input::placeholder { color: #444; }
+  .search-input:focus { border-color: rgba(255,255,255,0.2); }
+
+  /* STATS */
+  .stats-wrap { padding: 0 24px 24px; }
+  .stats-section-title { font-size: 12px; color: #555; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+  .chart-bars { display: flex; align-items: flex-end; gap: 4px; height: 80px; margin-bottom: 8px; }
+  .chart-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+  .chart-bar { width: 100%; background: #1DB954; border-radius: 3px 3px 0 0; min-height: 2px; transition: height 0.3s; }
+  .chart-bar.dim { background: #1a3a2a; }
+  .chart-label { font-size: 9px; color: #444; }
+  .genre-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .genre-tag { font-size: 12px; padding: 4px 12px; border-radius: 20px; background: #1a1a1a; color: #aaa; border: 0.5px solid rgba(255,255,255,0.08); }
+  .genre-tag.top { background: rgba(29,185,84,0.15); color: #1DB954; border-color: rgba(29,185,84,0.2); }
+  .stat-card { background: #111; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+  .stat-card-title { font-size: 11px; color: #555; margin-bottom: 6px; }
+  .stat-card-value { font-size: 28px; font-weight: 500; color: #1DB954; line-height: 1; }
+  .stat-card-sub { font-size: 11px; color: #555; margin-top: 4px; }
+  .stat-cards-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .score-bar-wrap { margin-top: 8px; }
+  .score-bar-bg { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+  .score-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #1DB954, #F59E0B); }
+  .score-labels { display: flex; justify-content: space-between; margin-top: 4px; }
+  .score-label { font-size: 10px; color: #444; }
+
+  /* TOOLS */
+  .tools-wrap { padding: 0 24px 24px; }
+  .tools-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .tools-actions { display: flex; gap: 8px; }
+  .tool-btn { font-size: 12px; padding: 5px 14px; border-radius: 20px; cursor: pointer; border: 0.5px solid rgba(255,255,255,0.1); background: #1a1a1a; color: #aaa; transition: all 0.15s; }
+  .tool-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+  .tool-btn.green { background: #1DB954; color: #000; border-color: transparent; font-weight: 500; }
+  .tool-btn.green:hover { background: #17a349; }
+  .tool-btn.red { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.2); }
+  .tool-btn.red:hover { background: rgba(239,68,68,0.25); }
+  .tool-artist-row { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 6px; background: #111; margin-bottom: 3px; }
+  .tool-artist-row:hover { background: #161616; }
+  .tool-check { width: 16px; height: 16px; border-radius: 4px; border: 0.5px solid rgba(255,255,255,0.2); background: transparent; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+  .tool-check.checked { background: #1DB954; border-color: #1DB954; color: #000; }
+  .follow-btn { font-size: 11px; padding: 3px 12px; border-radius: 20px; cursor: pointer; border: 0.5px solid rgba(255,255,255,0.1); background: transparent; color: #aaa; transition: all 0.15s; flex-shrink: 0; }
+  .follow-btn.following { background: rgba(29,185,84,0.15); color: #1DB954; border-color: rgba(29,185,84,0.2); }
+  .follow-btn:hover { color: #fff; }
+  .new-songs-note { font-size: 12px; color: #555; padding: 20px 0 10px; }
+  .new-songs-list { display: flex; flex-direction: column; gap: 3px; }
+  .new-song-row { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 6px; background: #111; }
+  .new-song-row:hover { background: #161616; }
+  .new-thumb { width: 34px; height: 34px; border-radius: 3px; flex-shrink: 0; }
+  .new-song-info { flex: 1; min-width: 0; }
+  .new-song-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .new-song-artist { font-size: 11px; color: #555; margin-top: 1px; }
+  .new-badge { font-size: 9px; padding: 1px 7px; border-radius: 20px; background: rgba(29,185,84,0.15); color: #1DB954; font-weight: 500; flex-shrink: 0; }
 
   /* MOBILE */
   @media (max-width: 600px) {
-    .navbar { padding: 0 16px; gap: 16px; }
-    .logo { font-size: 16px; }
+    .navbar { padding: 0 16px; gap: 8px; }
+    .logo { font-size: 15px; }
     .logout-btn { display: none; }
-    .nav-item-label { padding: 0 10px; font-size: 12px; }
+    .nav-item-label { padding: 0 8px; font-size: 12px; }
     .section-header { padding: 12px 16px 8px; flex-direction: column; align-items: flex-start; }
     .entries-wrap { align-self: flex-end; }
     .subtabs { padding: 0 16px 8px; }
     .track-list { padding: 0 16px 20px; }
     .artist-list { padding: 0 16px 20px; }
     .play-count { font-size: 18px; }
+    .search-wrap { padding: 0 16px 12px; }
+    .stats-wrap { padding: 0 16px 20px; }
+    .tools-wrap { padding: 0 16px 20px; }
+    .stat-cards-row { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
@@ -112,7 +172,7 @@
 
   <!-- NAVBAR -->
   <nav class="navbar">
-    <div class="logo">play<span>count</span><em>v2</em></div>
+    <div class="logo">play<span>count</span><em>v4</em></div>
     <div class="nav-links">
       <div class="nav-item">
         <div class="nav-item-label active" id="nav-tracks" onclick="goTo('tracks','recent')" ontouchstart="toggleDropdown('dd-tracks',event)">Tracks</div>
@@ -127,6 +187,21 @@
           <div class="drop-item" onclick="goTo('artists','top')">Top artists</div>
           <div class="drop-item" onclick="goTo('artists','followed')">Recently followed</div>
           <div class="drop-item" onclick="goTo('artists','all')">All artists</div>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-item-label" id="nav-stats" onclick="goTo('stats','activity')" ontouchstart="toggleDropdown('dd-stats',event)">Stats</div>
+        <div class="nav-dropdown" id="dd-stats">
+          <div class="drop-item" onclick="goTo('stats','activity')">Listening activity</div>
+          <div class="drop-item" onclick="goTo('stats','genres')">Top genres</div>
+          <div class="drop-item" onclick="goTo('stats','mainstream')">Mainstream score</div>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-item-label" id="nav-tools" onclick="goTo('tools','follow-manager')" ontouchstart="toggleDropdown('dd-tools',event)">Tools</div>
+        <div class="nav-dropdown" id="dd-tools">
+          <div class="drop-item" onclick="goTo('tools','follow-manager')">Artist follow manager</div>
+          <div class="drop-item" onclick="goTo('tools','new-songs')">New songs</div>
         </div>
       </div>
     </div>
@@ -151,8 +226,6 @@
         </select>
       </div>
     </div>
-
-    <!-- Recently played -->
     <div class="tab-content active" id="tracks-recent">
       <div class="subtabs">
         <div class="subtab active" onclick="setRecentSubtab('all',this)">All</div>
@@ -161,8 +234,6 @@
       </div>
       <div class="track-list" id="list-recent"></div>
     </div>
-
-    <!-- Most listened -->
     <div class="tab-content" id="tracks-listened">
       <div class="subtabs">
         <div class="subtab active" onclick="setListenedSubtab('7days',this)">Last 7 days</div>
@@ -190,26 +261,142 @@
         </select>
       </div>
     </div>
-
-    <!-- Top artists -->
     <div class="tab-content active" id="artists-top">
       <div class="subtabs">
-        <div class="subtab active" onclick="setSubtab('week',this)">This week</div>
-        <div class="subtab" onclick="setSubtab('month',this)">This month</div>
+        <div class="subtab active" onclick="setSubtab('week',this)">Last 7 days</div>
+        <div class="subtab" onclick="setSubtab('month',this)">Last 30 days</div>
         <div class="subtab" onclick="setSubtab('year',this)">This year</div>
         <div class="subtab" onclick="setSubtab('alltime',this)">All time</div>
       </div>
       <div class="artist-list" id="list-top-artists"></div>
     </div>
-
-    <!-- Recently followed -->
     <div class="tab-content" id="artists-followed">
       <div class="artist-list" id="list-followed"></div>
     </div>
-
-    <!-- All artists -->
     <div class="tab-content" id="artists-all">
+      <div class="search-wrap">
+        <input class="search-input" type="text" placeholder="Search artists..." oninput="filterAllArtists(this.value)" />
+      </div>
       <div class="artist-list" id="list-all-artists"></div>
+    </div>
+  </div>
+
+  <!-- STATS PAGE -->
+  <div class="page" id="page-stats">
+    <div class="section-header">
+      <div class="pills">
+        <div class="pill active" id="pill-stats-activity" onclick="setTab('stats','activity')">Listening activity</div>
+        <div class="pill" id="pill-stats-genres" onclick="setTab('stats','genres')">Top genres</div>
+        <div class="pill" id="pill-stats-mainstream" onclick="setTab('stats','mainstream')">Mainstream score</div>
+      </div>
+    </div>
+
+    <!-- Listening activity -->
+    <div class="tab-content active" id="stats-activity">
+      <div class="stats-wrap">
+        <div class="stats-section-title" style="margin-bottom:16px;">Most active hours</div>
+        <div class="chart-bars" id="chart-hours"></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:24px;">
+          <span style="font-size:10px;color:#444;">12am</span>
+          <span style="font-size:10px;color:#444;">6am</span>
+          <span style="font-size:10px;color:#444;">12pm</span>
+          <span style="font-size:10px;color:#444;">6pm</span>
+          <span style="font-size:10px;color:#444;">11pm</span>
+        </div>
+        <div class="stats-section-title" style="margin-bottom:16px;">Most active days</div>
+        <div class="chart-bars" id="chart-days"></div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-size:10px;color:#444;">Mon</span>
+          <span style="font-size:10px;color:#444;">Tue</span>
+          <span style="font-size:10px;color:#444;">Wed</span>
+          <span style="font-size:10px;color:#444;">Thu</span>
+          <span style="font-size:10px;color:#444;">Fri</span>
+          <span style="font-size:10px;color:#444;">Sat</span>
+          <span style="font-size:10px;color:#444;">Sun</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top genres -->
+    <div class="tab-content" id="stats-genres">
+      <div class="stats-wrap">
+        <div class="stats-section-title">Your top genres</div>
+        <div class="genre-list" id="genre-list"></div>
+        <div class="stats-section-title">Genre breakdown</div>
+        <div class="chart-bars" style="height:100px;" id="chart-genres"></div>
+      </div>
+    </div>
+
+    <!-- Mainstream score -->
+    <div class="tab-content" id="stats-mainstream">
+      <div class="stats-wrap">
+        <div class="stat-cards-row" id="mainstream-cards"></div>
+        <div class="stat-card">
+          <div class="stat-card-title">Mainstream score</div>
+          <div class="score-bar-wrap">
+            <div class="score-bar-bg"><div class="score-bar-fill" id="mainstream-bar" style="width:0%"></div></div>
+          </div>
+          <div class="score-labels">
+            <span class="score-label">Underground</span>
+            <span class="score-label">Mainstream</span>
+          </div>
+          <div class="stat-card-sub" id="mainstream-desc"></div>
+        </div>
+        <div class="artist-list" style="padding:0;margin-top:16px;" id="list-mainstream-artists"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLS PAGE -->
+  <div class="page" id="page-tools">
+    <div class="section-header">
+      <div class="pills">
+        <div class="pill active" id="pill-tools-follow-manager" onclick="setTab('tools','follow-manager')">Artist follow manager</div>
+        <div class="pill" id="pill-tools-new-songs" onclick="setTab('tools','new-songs')">New songs</div>
+      </div>
+    </div>
+
+    <!-- Artist follow manager -->
+    <div class="tab-content active" id="tools-follow-manager">
+      <div class="tools-wrap">
+        <div class="tools-header">
+          <div style="font-size:12px;color:#555;">Artists from your liked songs</div>
+          <div class="tools-actions">
+            <button class="tool-btn" onclick="selectAll()">Select all</button>
+            <button class="tool-btn green" onclick="followSelected()">Follow selected</button>
+            <button class="tool-btn red" onclick="unfollowSelected()">Unfollow selected</button>
+          </div>
+        </div>
+        <div id="follow-manager-list"></div>
+      </div>
+    </div>
+
+    <!-- New songs -->
+    <div class="tab-content" id="tools-new-songs">
+      <div class="tools-wrap">
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;background:#111;border-radius:8px;padding:14px 16px;">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <span style="font-size:12px;color:#666;flex-shrink:0;">Playlist name</span>
+            <input id="ns-playlist-name" type="text" value="New Releases" style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.1);border-radius:6px;padding:5px 10px;font-size:12px;color:#fff;outline:none;flex:1;min-width:140px;" placeholder="Playlist name in Spotify" />
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <span style="font-size:12px;color:#666;flex-shrink:0;">Show songs from last</span>
+            <select id="ns-duration" onchange="renderNewSongs()" style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.1);border-radius:6px;padding:5px 10px;font-size:12px;color:#1DB954;outline:none;cursor:pointer;">
+              <option value="7" selected>1 week</option>
+              <option value="14">2 weeks</option>
+              <option value="30">1 month</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <span style="font-size:12px;color:#666;flex-shrink:0;">Include</span>
+            <div style="display:flex;gap:6px;">
+              <div id="ns-main-only" class="subtab" onclick="setNsMode('main')" style="font-size:11px;">Main songs only</div>
+              <div id="ns-main-feat" class="subtab active" onclick="setNsMode('feat')" style="font-size:11px;">Main + features</div>
+            </div>
+          </div>
+        </div>
+        <div class="new-songs-list" id="new-songs-list"></div>
+      </div>
     </div>
   </div>
 
@@ -320,15 +507,95 @@
     { name: 'The Weeknd', color: '#1a3a2a' },{ name: 'Walker Hayes', color: '#3a2a1a' },{ name: 'Wizkid', color: '#2a3a2a' },
   ];
 
+  // ── COMPUTED: liked count per artist ────────────────────────
+  function getLikedCountForArtist(artistName) {
+    return recentTracks.filter(t => t.liked && t.artist.toLowerCase().includes(artistName.toLowerCase())).length;
+  }
+
+  // ── STATS DUMMY DATA ─────────────────────────────────────────
+  const hourData = [2,1,1,1,2,3,5,8,6,4,3,4,7,9,8,6,5,8,12,15,14,11,8,4];
+  const dayData  = [45,38,52,41,67,89,74];
+  const genres   = [
+    { name: 'Pop', count: 42, top: true },{ name: 'R&B', count: 28, top: true },
+    { name: 'Hip-Hop', count: 24, top: true },{ name: 'Indie Pop', count: 18, top: false },
+    { name: 'Dance Pop', count: 16, top: false },{ name: 'Soul', count: 12, top: false },
+    { name: 'Alternative', count: 10, top: false },{ name: 'Electropop', count: 8, top: false },
+    { name: 'Folk', count: 6, top: false },{ name: 'K-Pop', count: 5, top: false },
+  ];
+  const mainstreamScore = 72;
+  const mainstreamArtists = [
+    { name: 'The Weeknd', popularity: 96, color: '#1a3a2a' },
+    { name: 'Harry Styles', popularity: 91, color: '#2a1a3a' },
+    { name: 'Taylor Swift', popularity: 98, color: '#3a2a1a' },
+    { name: 'Billie Eilish', popularity: 88, color: '#1a2a3a' },
+    { name: 'Maneskin', popularity: 61, color: '#1a1a3a' },
+    { name: 'Kali Uchis', popularity: 58, color: '#1a3a1a' },
+  ];
+
+  // ── TOOLS DUMMY DATA ─────────────────────────────────────────
+  const likedArtistsList = [
+    { name: 'The Weeknd', color: '#1a3a2a', following: true },
+    { name: 'Harry Styles', color: '#2a1a3a', following: true },
+    { name: 'Olivia Rodrigo', color: '#3a1a3a', following: true },
+    { name: 'Taylor Swift', color: '#3a2a1a', following: false },
+    { name: 'Glass Animals', color: '#1a2a3a', following: true },
+    { name: 'Lil Nas X', color: '#3a3a1a', following: false },
+    { name: 'Jack Harlow', color: '#1a3a3a', following: false },
+    { name: 'Adele', color: '#3a2a2a', following: true },
+    { name: 'Ed Sheeran', color: '#2a2a3a', following: true },
+    { name: 'Justin Bieber', color: '#2a3a2a', following: true },
+    { name: 'Doja Cat', color: '#3a1a2a', following: true },
+    { name: 'SZA', color: '#3a2a1a', following: true },
+    { name: 'Post Malone', color: '#3a3a1a', following: false },
+    { name: 'Swae Lee', color: '#2a3a3a', following: false },
+    { name: 'Wizkid', color: '#2a3a2a', following: true },
+    { name: 'Tems', color: '#1a3a2a', following: true },
+    { name: 'Drake', color: '#3a3a2a', following: false },
+    { name: 'Silk Sonic', color: '#2a3a1a', following: true },
+    { name: 'Billie Eilish', color: '#1a2a3a', following: true },
+    { name: 'Kali Uchis', color: '#1a3a1a', following: true },
+    { name: 'iann dior', color: '#3a2a3a', following: false },
+    { name: '24kGoldn', color: '#3a2a1a', following: false },
+    { name: 'Diplo', color: '#2a1a2a', following: false },
+    { name: 'Bon Iver', color: '#2a3a2a', following: false },
+    { name: 'Beyoncé', color: '#3a3a1a', following: false },
+    { name: 'Clairo', color: '#1a2a2a', following: false },
+    { name: '21 Savage', color: '#3a1a2a', following: false },
+    { name: 'Ty Dolla Sign', color: '#2a1a3a', following: false },
+    { name: 'BTS', color: '#2a3a3a', following: false },
+  ];
+
+  const newSongs = [
+    { name: 'Popular', artist: 'The Weeknd ft Playboi Carti', mainArtist: 'The Weeknd', color: '#1a3a2a', daysAgo: 1, isFeature: false },
+    { name: 'As It Was (Remix)', artist: 'Harry Styles', mainArtist: 'Harry Styles', color: '#2a1a3a', daysAgo: 2, isFeature: false },
+    { name: 'vampire', artist: 'Olivia Rodrigo', mainArtist: 'Olivia Rodrigo', color: '#3a1a3a', daysAgo: 3, isFeature: false },
+    { name: 'Cruel Summer (Live)', artist: 'Taylor Swift', mainArtist: 'Taylor Swift', color: '#3a2a1a', daysAgo: 4, isFeature: false },
+    { name: 'Moth', artist: 'Billie Eilish', mainArtist: 'Billie Eilish', color: '#1a2a3a', daysAgo: 5, isFeature: false },
+    { name: 'Escapism', artist: 'Doja Cat ft The Weeknd', mainArtist: 'Doja Cat', color: '#3a1a2a', daysAgo: 6, isFeature: true },
+    { name: 'Creepin', artist: 'Metro Boomin ft The Weeknd', mainArtist: 'Metro Boomin', color: '#1a3a2a', daysAgo: 8, isFeature: true },
+    { name: 'Golden Hour', artist: 'Kali Uchis', mainArtist: 'Kali Uchis', color: '#1a3a1a', daysAgo: 9, isFeature: false },
+    { name: 'Bad to You', artist: 'Olivia Rodrigo ft BTS', mainArtist: 'Olivia Rodrigo', color: '#3a1a3a', daysAgo: 11, isFeature: true },
+    { name: 'Anti-Hero', artist: 'Taylor Swift', mainArtist: 'Taylor Swift', color: '#3a2a1a', daysAgo: 13, isFeature: false },
+    { name: 'What Was I Made For', artist: 'Billie Eilish', mainArtist: 'Billie Eilish', color: '#1a2a3a', daysAgo: 15, isFeature: false },
+    { name: 'Rich Flex', artist: 'Drake ft 21 Savage', mainArtist: 'Drake', color: '#3a3a2a', daysAgo: 18, isFeature: true },
+    { name: 'As You Are', artist: 'The Weeknd', mainArtist: 'The Weeknd', color: '#1a3a2a', daysAgo: 22, isFeature: false },
+    { name: 'Dance The Night', artist: 'Dua Lipa', mainArtist: 'Dua Lipa', color: '#3a1a2a', daysAgo: 25, isFeature: false },
+    { name: 'Flowers', artist: 'Miley Cyrus ft Harry Styles', mainArtist: 'Miley Cyrus', color: '#2a1a3a', daysAgo: 28, isFeature: true },
+  ];
+
   // ── STATE ────────────────────────────────────────────────────
   const state = {
     page: 'tracks',
+    nsMode: 'feat',
     tracksTab: 'recent',
     artistsTab: 'top',
+    statsTab: 'activity',
+    toolsTab: 'follow-manager',
     topSubtab: 'week',
     listenedSubtab: '7days',
     recentSubtab: 'all',
     entries: { tracks: 20, artists: 20 },
+    selectedArtists: new Set(),
   };
 
   // ── RENDER ───────────────────────────────────────────────────
@@ -350,12 +617,14 @@
   }
 
   function renderArtistRow(a) {
+    const likedCount = getLikedCountForArtist(a.name);
     return `<div class="artist-row">
       <div class="artist-thumb" style="background:${a.color}"></div>
       <div class="artist-info">
         <div class="artist-name">${a.name}</div>
         ${a.followedAgo ? `<div class="artist-sub">${a.followedAgo}</div>` : ''}
       </div>
+      ${likedCount > 0 ? `<span class="liked-count">${likedCount} liked</span>` : ''}
       ${a.plays !== undefined
         ? `<div class="track-right"><div class="play-count">${a.plays}</div><div class="plays-label">plays</div></div>`
         : `<div class="badge-following">following</div>`}
@@ -367,9 +636,98 @@
     list.forEach(a => {
       const l = a.name[0].toUpperCase();
       if (l !== last) { html += `<div class="letter-divider">${l}</div>`; last = l; }
-      html += `<div class="artist-row"><div class="artist-thumb" style="background:${a.color}"></div><div class="artist-name">${a.name}</div><div class="badge-following">following</div></div>`;
+      const likedCount = getLikedCountForArtist(a.name);
+      html += `<div class="artist-row">
+        <div class="artist-thumb" style="background:${a.color}"></div>
+        <div class="artist-name">${a.name}</div>
+        ${likedCount > 0 ? `<span class="liked-count">${likedCount} liked</span>` : ''}
+        <div class="badge-following">following</div>
+      </div>`;
     });
     return html;
+  }
+
+  function filterAllArtists(query) {
+    const filtered = query
+      ? allArtists.filter(a => a.name.toLowerCase().includes(query.toLowerCase()))
+      : allArtists;
+    document.getElementById('list-all-artists').innerHTML = renderAllArtists(filtered);
+  }
+
+  function renderStats() {
+    // Hours chart
+    const maxH = Math.max(...hourData);
+    document.getElementById('chart-hours').innerHTML = hourData.map((v, i) => `
+      <div class="chart-bar-wrap">
+        <div class="chart-bar ${v === maxH ? '' : 'dim'}" style="height:${Math.round((v/maxH)*80)}px"></div>
+      </div>`).join('');
+
+    // Days chart
+    const maxD = Math.max(...dayData);
+    const days = ['M','T','W','T','F','S','S'];
+    document.getElementById('chart-days').innerHTML = dayData.map((v, i) => `
+      <div class="chart-bar-wrap">
+        <div class="chart-bar ${v === maxD ? '' : 'dim'}" style="height:${Math.round((v/maxD)*80)}px"></div>
+        <div class="chart-label">${days[i]}</div>
+      </div>`).join('');
+
+    // Genres
+    document.getElementById('genre-list').innerHTML = genres.map(g =>
+      `<div class="genre-tag ${g.top ? 'top' : ''}">${g.name}</div>`).join('');
+    const maxG = Math.max(...genres.map(g => g.count));
+    document.getElementById('chart-genres').innerHTML = genres.slice(0,8).map(g => `
+      <div class="chart-bar-wrap">
+        <div class="chart-bar ${g.top ? '' : 'dim'}" style="height:${Math.round((g.count/maxG)*100)}px"></div>
+        <div class="chart-label">${g.name.split(' ')[0]}</div>
+      </div>`).join('');
+
+    // Mainstream
+    document.getElementById('mainstream-cards').innerHTML = `
+      <div class="stat-card"><div class="stat-card-title">Avg popularity</div><div class="stat-card-value">${mainstreamScore}</div><div class="stat-card-sub">out of 100</div></div>
+      <div class="stat-card"><div class="stat-card-title">Most mainstream</div><div class="stat-card-value" style="font-size:16px;margin-top:4px;">Taylor Swift</div><div class="stat-card-sub">98 / 100</div></div>
+      <div class="stat-card"><div class="stat-card-title">Most underground</div><div class="stat-card-value" style="font-size:16px;margin-top:4px;">Kali Uchis</div><div class="stat-card-sub">58 / 100</div></div>`;
+    document.getElementById('mainstream-bar').style.width = mainstreamScore + '%';
+    document.getElementById('mainstream-desc').textContent = 'Your taste leans mainstream but you have some underground gems.';
+    document.getElementById('list-mainstream-artists').innerHTML = mainstreamArtists.map(a => `
+      <div class="artist-row">
+        <div class="artist-thumb" style="background:${a.color}"></div>
+        <div class="artist-name">${a.name}</div>
+        <div class="track-right"><div class="play-count" style="font-size:16px;">${a.popularity}</div><div class="plays-label">popularity</div></div>
+      </div>`).join('');
+  }
+
+  function renderFollowManager() {
+    document.getElementById('follow-manager-list').innerHTML = likedArtistsList.map((a, i) => {
+      const likedCount = getLikedCountForArtist(a.name);
+      const isSelected = state.selectedArtists.has(i);
+      return `<div class="tool-artist-row">
+        <div class="tool-check ${isSelected ? 'checked' : ''}" onclick="toggleSelect(${i})">${isSelected ? '✓' : ''}</div>
+        <div class="artist-thumb" style="background:${a.color}"></div>
+        <div class="artist-name">${a.name}</div>
+        ${likedCount > 0 ? `<span class="liked-count">${likedCount} liked</span>` : ''}
+        <button class="follow-btn ${a.following ? 'following' : ''}" onclick="toggleFollow(${i})">${a.following ? 'Following' : 'Follow'}</button>
+      </div>`;
+    }).join('');
+  }
+
+  function renderNewSongs() {
+    const duration = parseInt(document.getElementById('ns-duration')?.value || '7');
+    const mode = state.nsMode || 'feat';
+    const filtered = newSongs.filter(s => {
+      if (s.daysAgo > duration) return false;
+      if (mode === 'main' && s.isFeature) return false;
+      return true;
+    });
+    document.getElementById('new-songs-list').innerHTML = filtered.length ? filtered.map(s => `
+      <div class="new-song-row">
+        <div class="new-thumb" style="background:${s.color}"></div>
+        <div class="new-song-info">
+          <div class="new-song-name">${s.name}</div>
+          <div class="new-song-artist">${s.artist}</div>
+        </div>
+        ${s.isFeature ? '<div class="new-badge" style="background:rgba(249,115,22,0.15);color:#F97316;">feature</div>' : ''}
+        <div class="new-badge" style="margin-left:4px;">${s.daysAgo === 1 ? 'today' : s.daysAgo + 'd ago'}</div>
+      </div>`).join('') : '<div style="font-size:12px;color:#444;padding:12px 0;">No new releases in this period.</div>';
   }
 
   function render() {
@@ -383,6 +741,49 @@
     document.getElementById('list-top-artists').innerHTML = (topArtistsData[state.topSubtab] || topArtistsData.week).slice(0, n.artists).map(renderArtistRow).join('');
     document.getElementById('list-followed').innerHTML = followedArtists.slice(0, n.artists).map(renderArtistRow).join('');
     document.getElementById('list-all-artists').innerHTML = renderAllArtists(allArtists);
+    renderStats();
+    renderFollowManager();
+    renderNewSongs();
+  }
+
+  // ── TOOLS ACTIONS ────────────────────────────────────────────
+  function toggleSelect(i) {
+    if (state.selectedArtists.has(i)) state.selectedArtists.delete(i);
+    else state.selectedArtists.add(i);
+    renderFollowManager();
+  }
+
+  function selectAll() {
+    if (state.selectedArtists.size === likedArtistsList.length) {
+      state.selectedArtists.clear();
+    } else {
+      likedArtistsList.forEach((_, i) => state.selectedArtists.add(i));
+    }
+    renderFollowManager();
+  }
+
+  function followSelected() {
+    state.selectedArtists.forEach(i => { likedArtistsList[i].following = true; });
+    state.selectedArtists.clear();
+    renderFollowManager();
+  }
+
+  function unfollowSelected() {
+    state.selectedArtists.forEach(i => { likedArtistsList[i].following = false; });
+    state.selectedArtists.clear();
+    renderFollowManager();
+  }
+
+  function toggleFollow(i) {
+    likedArtistsList[i].following = !likedArtistsList[i].following;
+    renderFollowManager();
+  }
+
+  function setNsMode(mode) {
+    state.nsMode = mode;
+    document.getElementById('ns-main-only').classList.toggle('active', mode === 'main');
+    document.getElementById('ns-main-feat').classList.toggle('active', mode === 'feat');
+    renderNewSongs();
   }
 
   // ── NAVIGATION ───────────────────────────────────────────────
@@ -394,10 +795,12 @@
   }
 
   function goTo(page, tab) {
+    const currentTab = page === 'tracks' ? state.tracksTab : page === 'artists' ? state.artistsTab : page === 'stats' ? state.statsTab : state.toolsTab;
+    if (state.page === page && currentTab === tab) { hideDropdowns(); return; }
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + page).classList.add('active');
-    document.getElementById('nav-tracks').classList.toggle('active', page === 'tracks');
-    document.getElementById('nav-artists').classList.toggle('active', page === 'artists');
+    ['tracks','artists','stats','tools'].forEach(p => document.getElementById('nav-' + p).classList.remove('active'));
+    document.getElementById('nav-' + page).classList.add('active');
     state.page = page;
     setTab(page, tab);
     window.location.hash = page + '/' + tab;
@@ -406,7 +809,9 @@
 
   function setTab(page, tab) {
     if (page === 'tracks') state.tracksTab = tab;
-    else state.artistsTab = tab;
+    else if (page === 'artists') state.artistsTab = tab;
+    else if (page === 'stats') state.statsTab = tab;
+    else state.toolsTab = tab;
     document.querySelectorAll('#page-' + page + ' .pill').forEach(p => p.classList.remove('active'));
     const pill = document.getElementById('pill-' + page + '-' + tab);
     if (pill) pill.classList.add('active');
@@ -477,7 +882,7 @@
   function initFromHash() {
     const hash = window.location.hash.replace('#', '');
     const [page, tab] = hash.split('/');
-    const valid = { tracks: ['recent', 'listened'], artists: ['top', 'followed', 'all'] };
+    const valid = { tracks: ['recent','listened'], artists: ['top','followed','all'], stats: ['activity','genres','mainstream'], tools: ['follow-manager','new-songs'] };
     if (page && valid[page]) {
       goTo(page, (tab && valid[page].includes(tab)) ? tab : valid[page][0]);
     } else {
