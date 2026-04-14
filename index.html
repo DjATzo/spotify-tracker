@@ -172,7 +172,7 @@
 
   <!-- NAVBAR -->
   <nav class="navbar">
-    <div class="logo">play<span>count</span><em>v4</em></div>
+    <div class="logo">play<span>count</span><em>v5</em></div>
     <div class="nav-links">
       <div class="nav-item">
         <div class="nav-item-label active" id="nav-tracks" onclick="goTo('tracks','recent')" ontouchstart="toggleDropdown('dd-tracks',event)">Tracks</div>
@@ -600,6 +600,7 @@
 
   // ── RENDER ───────────────────────────────────────────────────
   function renderTrackRow(t, i, isListened) {
+    if (!t) return '';
     return `<div class="track-row">
       <div class="track-num">${i+1}</div>
       <div class="track-thumb" style="background:${t.color}"></div>
@@ -731,19 +732,23 @@
   }
 
   function render() {
+
+    if (!recentTracks || !recentTracks.length) return;
     const n = state.entries;
     let recent = recentTracks.slice(0, n.tracks);
     if (state.recentSubtab === 'liked') recent = recentTracks.filter(t => t.liked).slice(0, n.tracks);
     if (state.recentSubtab === 'notliked') recent = recentTracks.filter(t => !t.liked).slice(0, n.tracks);
     document.getElementById('list-recent').innerHTML = recent.map((t, i) => renderTrackRow(t, i, false)).join('');
-    const ld = listenedData[state.listenedSubtab] || listenedData['7days'];
-    document.getElementById('list-listened').innerHTML = ld.slice(0, n.tracks).map((t, i) => renderTrackRow(t, i, true)).join('');
-    document.getElementById('list-top-artists').innerHTML = (topArtistsData[state.topSubtab] || topArtistsData.week).slice(0, n.artists).map(renderArtistRow).join('');
-    document.getElementById('list-followed').innerHTML = followedArtists.slice(0, n.artists).map(renderArtistRow).join('');
-    document.getElementById('list-all-artists').innerHTML = renderAllArtists(allArtists);
-    renderStats();
-    renderFollowManager();
-    renderNewSongs();
+    try {
+      const ld = listenedData[state.listenedSubtab] || listenedData['7days'];
+      document.getElementById('list-listened').innerHTML = ld.slice(0, n.tracks).map((t, i) => renderTrackRow(t, i, true)).join('');
+      document.getElementById('list-top-artists').innerHTML = (topArtistsData[state.topSubtab] || topArtistsData.week).slice(0, n.artists).map(renderArtistRow).join('');
+      document.getElementById('list-followed').innerHTML = followedArtists.slice(0, n.artists).map(renderArtistRow).join('');
+      document.getElementById('list-all-artists').innerHTML = renderAllArtists(allArtists);
+      renderStats();
+      renderFollowManager();
+      renderNewSongs();
+    } catch(e) { console.error('render error:', e); }
   }
 
   // ── TOOLS ACTIONS ────────────────────────────────────────────
@@ -889,6 +894,9 @@
       goTo('tracks', 'recent');
     }
   }
+
+  // Force initial render — goTo skips render when state already matches defaults
+  render();
 
   window.addEventListener('hashchange', initFromHash);
   initFromHash();
