@@ -844,20 +844,33 @@
     ]);
 
     if (recent?.items?.length) {
+      // count actual play occurrences per track in the 50-item history
+      const playCounts = {}, playAgo = {}, playImage = {};
+      recent.items.forEach(item => {
+        const id = item.track.id;
+        playCounts[id] = (playCounts[id] || 0) + 1;
+        if (!playAgo[id]) playAgo[id] = item.played_at; // most recent first
+        if (!playImage[id]) playImage[id] = item.track.album.images?.[1]?.url || null;
+      });
+      const seen = new Set();
       recentTracks.length = 0;
-      recent.items.forEach((item, i) => {
+      recent.items.forEach(item => {
+        const id = item.track.id;
+        if (seen.has(id)) return;
+        seen.add(id);
         recentTracks.push({
           name: item.track.name,
           artist: item.track.artists.map(a => a.name).join(', '),
-          plays: recent.items.length - i,
-          ago: timeAgo(item.played_at),
-          pct: Math.round(((recent.items.length - i) / recent.items.length) * 100),
-          imageUrl: item.track.album.images?.[1]?.url || null,
+          plays: playCounts[id],
+          ago: timeAgo(playAgo[id]),
+          pct: Math.min(100, Math.round((playCounts[id] / Math.max(...Object.values(playCounts))) * 100)),
+          imageUrl: playImage[id],
           color: '#1a1a1a',
           liked: false,
-          id: item.track.id,
+          id,
         });
       });
+      recentTracks.sort((a, b) => b.plays - a.plays);
     }
 
     function mapTracks(data) {
@@ -865,7 +878,7 @@
       return data.items.map((t, i) => ({
         name: t.name,
         artist: t.artists.map(a => a.name).join(', '),
-        plays: data.items.length - i,
+        plays: i + 1,
         pct: Math.round(((data.items.length - i) / data.items.length) * 100),
         imageUrl: t.album.images?.[1]?.url || null,
         color: '#1a1a1a',
@@ -877,7 +890,7 @@
       if (!data?.items?.length) return [];
       return data.items.map((a, i) => ({
         name: a.name,
-        plays: data.items.length - i,
+        plays: i + 1,
         imageUrl: a.images?.[1]?.url || null,
         color: '#1a1a1a',
         id: a.id,
@@ -1438,8 +1451,8 @@
         <div class="bar-wrap"><div class="bar-bg"><div class="bar-fill bar-green" style="width:${t.pct}%"></div></div></div>
       </div>
       <div class="track-right">
-        <div class="play-count">${t.plays}</div>
-        <div class="plays-label">plays</div>
+        <div class="play-count">${isListened ? '#' + t.plays : t.plays}</div>
+        <div class="plays-label">${isListened ? 'rank' : 'plays'}</div>
         ${isListened ? '<div class="badge-alltime">top</div>' : `<div class="time-ago">${t.ago}</div>`}
       </div>
     </div>`;
