@@ -1458,6 +1458,10 @@
     </div>`;
   }
 
+  function getLikedCountForArtist(artistName) {
+    return recentTracks.filter(t => t.liked && t.artist.toLowerCase().includes(artistName.toLowerCase())).length;
+  }
+
   function renderArtistRow(a) {
     const likedCount = getLikedCountForArtist(a.name);
     return `<div class="artist-row">
