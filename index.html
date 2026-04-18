@@ -895,6 +895,15 @@
     followedArtists.length = 0;
     followedArtists.push(...followed);
 
+    // build allArtists from followed + top artists, deduplicated and sorted
+    const seen = new Set();
+    const combined = [...followed, ...topArtistsData.alltime, ...topArtistsData.week];
+    allArtists.length = 0;
+    combined.forEach(a => {
+      if (!seen.has(a.name)) { seen.add(a.name); allArtists.push({ name: a.name, imageUrl: a.imageUrl || null, color: '#1a1a1a' }); }
+    });
+    allArtists.sort((a, b) => a.name.localeCompare(b.name));
+
     render();
   }
 
