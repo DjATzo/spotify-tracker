@@ -2,8 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Playcount</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#1DB954" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Playcount" />
+<link rel="apple-touch-icon" href="icon.svg" />
 <style>
   :root { --accent: #1DB954; --accent-rgb: 29,185,84; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -231,9 +237,21 @@
     .stat-cards-row { grid-template-columns: 1fr 1fr; }
   }
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 </head>
 <body>
-<div class="app">
+<!-- LOGIN PAGE -->
+<div id="login-page" style="position:fixed;inset:0;background:#0a0a0a;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;padding:24px;">
+  <div style="text-align:center;">
+    <div style="font-size:40px;font-weight:500;letter-spacing:-0.03em;margin-bottom:12px;">play<span style="color:#1DB954">count</span></div>
+    <div style="font-size:14px;color:#555;line-height:1.6;">Track your Spotify listening.<br>Discover new releases from artists you follow.</div>
+  </div>
+  <button onclick="spotifyLoginApp()" style="font-size:14px;padding:14px 40px;border-radius:50px;background:#1DB954;color:#000;border:none;font-weight:600;cursor:pointer;letter-spacing:0.01em;">Connect with Spotify</button>
+  <div style="font-size:11px;color:#333;text-align:center;max-width:260px;line-height:1.7;">Requests access to read your followed artists and manage playlists. Your data is never shared.</div>
+</div>
+
+<div id="main-app" class="app" style="display:none;">
 
   <!-- NAVBAR -->
   <nav class="navbar">
@@ -284,7 +302,7 @@
         <div class="avatar">JD</div>
         <div class="profile-dropdown">
           <div class="profile-drop-item" onclick="openSettings()">Settings</div>
-          <div class="profile-drop-item danger">Log out</div>
+          <div class="profile-drop-item danger" onclick="spotifyLogout()">Disconnect Spotify</div>
         </div>
       </div>
     </div>
@@ -489,6 +507,7 @@
         </div>
         <div class="ns-push-row">
           <div id="ns-push-status" class="ns-push-status">No playlist synced yet</div>
+          <button class="tool-btn" onclick="refreshNewSongs()" style="margin-right:6px;" title="Re-fetch from Spotify">↺ Refresh</button>
           <button class="ns-push-btn" id="ns-push-btn" onclick="nsSpotifyPush()">Push to Spotify</button>
         </div>
         <div style="background:#111;border-radius:8px;padding:14px 16px;margin-bottom:20px;">
@@ -607,12 +626,157 @@
   </div>
 
 </div>
+
+<!-- PWA INSTALL BANNER -->
+<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#161616;border-top:0.5px solid rgba(255,255,255,0.1);padding:14px 20px;align-items:center;justify-content:space-between;gap:12px;z-index:1000;">
+  <span style="font-size:13px;color:#aaa;flex:1;">Add Playcount to your home screen</span>
+  <div style="display:flex;gap:8px;flex-shrink:0;">
+    <button onclick="dismissPwaBanner()" style="font-size:12px;padding:5px 12px;border-radius:20px;border:0.5px solid rgba(255,255,255,0.15);background:transparent;color:#666;cursor:pointer;">Not now</button>
+    <button onclick="installPwa()" style="font-size:12px;padding:5px 16px;border-radius:20px;background:#1DB954;color:#000;border:none;font-weight:500;cursor:pointer;">Install</button>
+  </div>
+</div>
+
 <script>
   // ── SPOTIFY CONFIG ───────────────────────────────────────────
   // Replace with your Spotify app's Client ID from developer.spotify.com
-  const SPOTIFY_CLIENT_ID = 'YOUR_CLIENT_ID';
+  const SPOTIFY_CLIENT_ID = '4cced736076e415083ac29a7608277af';
   const SPOTIFY_REDIRECT_URI = window.location.origin + window.location.pathname;
-  const SPOTIFY_SCOPES = 'playlist-modify-public playlist-modify-private';
+  const SPOTIFY_SCOPES = 'playlist-modify-public playlist-modify-private user-follow-read user-read-private';
+
+  // ── FIREBASE REALTIME DATABASE ───────────────────────────────
+  const _fbApp = firebase.initializeApp({
+    apiKey: "AIzaSyBQdq4lgjmdMb6RtaTgwm6_jroIUS20zf0",
+    authDomain: "spotify-65d2b.firebaseapp.com",
+    databaseURL: "https://spotify-65d2b-default-rtdb.firebaseio.com",
+    projectId: "spotify-65d2b",
+    storageBucket: "spotify-65d2b.firebasestorage.app",
+    messagingSenderId: "196083734170",
+    appId: "1:196083734170:web:3b42f7f57d105a7482f123"
+  });
+  const rtdb = firebase.database();
+
+  async function getSpotifyUserId() {
+    let uid = localStorage.getItem('sp_user_id');
+    if (uid) return uid;
+    const token = await getValidToken();
+    if (!token) return null;
+    try {
+      const me = await spotifyApi('GET', '/me', null, token);
+      uid = me.id;
+      localStorage.setItem('sp_user_id', uid);
+      return uid;
+    } catch(e) { return null; }
+  }
+
+  async function getSeenSongIds(userId) {
+    try {
+      const snap = await rtdb.ref(`users/${userId}/seenSongs`).get();
+      return snap.exists() ? new Set(Object.keys(snap.val())) : new Set();
+    } catch(e) { return new Set(); }
+  }
+
+  async function markSongSeen(trackId) {
+    liveNewSongs = liveNewSongs.filter(s => s.id !== trackId);
+    renderNewSongsFromLive();
+    const userId = await getSpotifyUserId();
+    if (!userId) return;
+    try { await rtdb.ref(`users/${userId}/seenSongs/${trackId}`).set({ seenAt: Date.now() }); } catch(e) {}
+  }
+
+  async function getCachedNewSongs(userId) {
+    try {
+      const snap = await rtdb.ref(`users/${userId}/cache/newSongs`).get();
+      if (!snap.exists()) return null;
+      const data = snap.val();
+      if (Date.now() - data.fetchedAt > 3600000) return null;
+      return JSON.parse(data.songs);
+    } catch(e) { return null; }
+  }
+
+  async function setCachedNewSongs(userId, songs) {
+    try { await rtdb.ref(`users/${userId}/cache/newSongs`).set({ songs: JSON.stringify(songs), fetchedAt: Date.now() }); } catch(e) {}
+  }
+
+  let liveNewSongs = [];
+  let nsLoading = false;
+  let nsLoaded = false;
+
+  async function fetchNewSongsFromSpotify() {
+    const token = await getValidToken();
+    if (!token) return null;
+    const userId = await getSpotifyUserId();
+    if (userId) {
+      const cached = await getCachedNewSongs(userId);
+      if (cached) return cached;
+    }
+    const artists = [];
+    let url = '/me/following?type=artist&limit=50';
+    while (url) {
+      const data = await spotifyApi('GET', url, null, token);
+      artists.push(...data.artists.items);
+      url = data.artists.next ? data.artists.next.replace('https://api.spotify.com/v1', '') : null;
+    }
+    if (!artists.length) return [];
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 30);
+    const cutoffStr = cutoffDate.toISOString().split('T')[0];
+    const songs = [];
+    const seenTrackIds = new Set();
+    for (let i = 0; i < artists.length; i += 5) {
+      const batch = artists.slice(i, i + 5);
+      const albumResults = await Promise.all(
+        batch.map(a => spotifyApi('GET', `/artists/${a.id}/albums?include_groups=single,album&limit=10&market=from_token`, null, token).catch(() => null))
+      );
+      for (let j = 0; j < batch.length; j++) {
+        const artist = batch[j];
+        const albumData = albumResults[j];
+        if (!albumData) continue;
+        const recentAlbums = albumData.items.filter(al => al.release_date >= cutoffStr);
+        if (!recentAlbums.length) continue;
+        const trackResults = await Promise.all(
+          recentAlbums.map(al => spotifyApi('GET', `/albums/${al.id}/tracks?limit=50`, null, token).catch(() => null))
+        );
+        for (let k = 0; k < recentAlbums.length; k++) {
+          const album = recentAlbums[k];
+          const trackData = trackResults[k];
+          if (!trackData) continue;
+          const releaseDate = new Date(album.release_date);
+          const daysAgo = Math.max(0, Math.floor((Date.now() - releaseDate) / 86400000));
+          const imageUrl = album.images?.[1]?.url || album.images?.[0]?.url || null;
+          for (const track of trackData.items) {
+            if (seenTrackIds.has(track.id)) continue;
+            if (!track.artists.some(a => a.id === artist.id)) continue;
+            seenTrackIds.add(track.id);
+            songs.push({
+              id: track.id,
+              uri: track.uri,
+              name: track.name,
+              artist: track.artists.map(a => a.name).join(', '),
+              mainArtist: artist.name,
+              imageUrl,
+              daysAgo,
+              releaseDate: album.release_date,
+              isFeature: album.artists[0]?.id !== artist.id,
+            });
+          }
+        }
+      }
+    }
+    songs.sort((a, b) => a.daysAgo - b.daysAgo);
+    if (userId) await setCachedNewSongs(userId, songs);
+    return songs;
+  }
+
+  async function refreshNewSongs() {
+    const userId = await getSpotifyUserId();
+    if (userId) {
+      try { await rtdb.ref(`users/${userId}/cache/newSongs`).remove(); } catch(e) {}
+    }
+    nsLoaded = false;
+    nsLoading = false;
+    liveNewSongs = [];
+    renderNewSongs();
+  }
 
   // ── SPOTIFY PKCE OAUTH ───────────────────────────────────────
   function randomBytes(len) {
@@ -708,10 +872,15 @@
       await exchangeCode(code);
       if (localStorage.getItem('sp_push_pending')) {
         localStorage.removeItem('sp_push_pending');
+        showMainApp();
         await nsSpotifyPush();
+      } else {
+        localStorage.removeItem('sp_login_pending');
+        showMainApp();
       }
     } catch(e) {
       setNsPushStatus('Auth failed: ' + e.message, true);
+      showLoginPage();
     }
   }
 
@@ -844,14 +1013,14 @@
 
     const duration = parseInt(document.getElementById('ns-duration')?.value || '7');
     const mode = state.nsMode || 'feat';
-    const filtered = newSongs.filter(s => {
+    const filtered = liveNewSongs.filter(s => {
       if (s.daysAgo > duration) return false;
       if (mode === 'main' && s.isFeature) return false;
       return true;
     });
 
     const uris = (await Promise.all(
-      filtered.map(s => searchTrackUri(token, s.name, s.mainArtist))
+      filtered.map(s => s.uri ? Promise.resolve(s.uri) : searchTrackUri(token, s.name, s.mainArtist))
     )).filter(Boolean);
 
     if (!storedId) {
@@ -982,13 +1151,19 @@
   // ── DUMMY DATA ───────────────────────────────────────────────
 
   const recentTracks = [
-    { name: 'Blinding Lights', artist: 'The Weeknd', plays: 41, ago: '2 min ago', pct: 90, color: '#1a3a2a', liked: true },
-    { name: 'As It Was', artist: 'Harry Styles', plays: 33, ago: '1 hr ago', pct: 74, color: '#2a1a3a', liked: true },
-    { name: 'Stay', artist: 'The Kid LAROI, Justin Bieber', plays: 29, ago: '3 hr ago', pct: 60, color: '#3a2a1a', liked: false },
-    { name: 'Heat Waves', artist: 'Glass Animals', plays: 24, ago: 'yesterday', pct: 48, color: '#1a2a3a', liked: true },
-    { name: 'Levitating', artist: 'Dua Lipa', plays: 21, ago: 'yesterday', pct: 38, color: '#3a1a2a', liked: false },
-    { name: 'Peaches', artist: 'Justin Bieber', plays: 18, ago: '2 days ago', pct: 30, color: '#2a3a2a', liked: true },
-    { name: 'good 4 u', artist: 'Olivia Rodrigo', plays: 15, ago: '2 days ago', pct: 24, color: '#3a1a3a', liked: false },
+  ];
+  const listenedData = { '7days': [], '30days': [], 'year': [], 'alltime': [] };
+  const topArtistsData = { week: [], month: [], year: [], alltime: [] };
+  const followedArtists = [];
+  const allArtists = [];
+  const hourData = new Array(24).fill(0);
+  const dayData = new Array(7).fill(0);
+  const genres = [];
+  const mainstreamScore = 0;
+  const mainstreamArtists = [];
+  const likedArtistsList = [];
+  const _oldData = [{ _: 0 }];
+  const __x = [{ _: 0 },
     { name: 'INDUSTRY BABY', artist: 'Lil Nas X, Jack Harlow', plays: 12, ago: '3 days ago', pct: 18, color: '#1a3a3a', liked: true },
     { name: 'Easy On Me', artist: 'Adele', plays: 10, ago: '3 days ago', pct: 14, color: '#3a2a2a', liked: false },
     { name: 'Bad Habits', artist: 'Ed Sheeran', plays: 9, ago: '4 days ago', pct: 11, color: '#2a2a3a', liked: true },
@@ -1031,24 +1206,23 @@
     { name: 'Congratulations', artist: 'Post Malone', plays: 1, ago: '15 days ago', pct: 1, color: '#3a3a1a', liked: false },
     { name: 'White Iverson', artist: 'Post Malone', plays: 1, ago: '15 days ago', pct: 1, color: '#3a3a1a', liked: true },
     { name: 'Psycho', artist: 'Post Malone ft Ty Dolla Sign', plays: 1, ago: '16 days ago', pct: 1, color: '#3a3a1a', liked: false },
-    { name: 'Cruel Summer', artist: 'Taylor Swift', plays: 1, ago: '16 days ago', pct: 1, color: '#3a2a1a', liked: true },
   ];
 
-  const listenedData = {
+  const _deadData = { _removed: true }; const __dead2 = {
     '7days':  [{ name: 'Blinding Lights', artist: 'The Weeknd', plays: 41, pct: 90, color: '#1a3a2a' },{ name: 'As It Was', artist: 'Harry Styles', plays: 33, pct: 74, color: '#2a1a3a' },{ name: 'Heat Waves', artist: 'Glass Animals', plays: 24, pct: 48, color: '#1a2a3a' },{ name: 'Levitating', artist: 'Dua Lipa', plays: 21, pct: 38, color: '#3a1a2a' },{ name: 'Peaches', artist: 'Justin Bieber', plays: 18, pct: 30, color: '#2a3a2a' },{ name: 'good 4 u', artist: 'Olivia Rodrigo', plays: 15, pct: 24, color: '#3a1a3a' },{ name: 'INDUSTRY BABY', artist: 'Lil Nas X', plays: 12, pct: 18, color: '#1a3a3a' },{ name: 'Easy On Me', artist: 'Adele', plays: 10, pct: 14, color: '#3a2a2a' },{ name: 'Bad Habits', artist: 'Ed Sheeran', plays: 9, pct: 11, color: '#2a2a3a' },{ name: 'Sunflower', artist: 'Post Malone', plays: 9, pct: 11, color: '#3a3a1a' },{ name: 'Watermelon Sugar', artist: 'Harry Styles', plays: 8, pct: 10, color: '#2a1a3a' },{ name: 'drivers license', artist: 'Olivia Rodrigo', plays: 8, pct: 10, color: '#3a1a3a' },{ name: 'Montero', artist: 'Lil Nas X', plays: 7, pct: 9, color: '#3a3a1a' },{ name: 'Save Your Tears', artist: 'The Weeknd', plays: 7, pct: 9, color: '#1a3a2a' },{ name: 'Happier Than Ever', artist: 'Billie Eilish', plays: 7, pct: 9, color: '#1a2a3a' },{ name: 'Butter', artist: 'BTS', plays: 6, pct: 8, color: '#2a3a3a' },{ name: 'Kiss Me More', artist: 'Doja Cat', plays: 6, pct: 8, color: '#3a1a2a' },{ name: 'Positions', artist: 'Ariana Grande', plays: 6, pct: 8, color: '#3a2a3a' },{ name: 'Leave The Door Open', artist: 'Silk Sonic', plays: 5, pct: 7, color: '#2a3a1a' },{ name: 'Beggin', artist: 'Maneskin', plays: 5, pct: 7, color: '#1a1a3a' }],
     '30days': [{ name: 'Blinding Lights', artist: 'The Weeknd', plays: 98, pct: 94, color: '#1a3a2a' },{ name: 'As It Was', artist: 'Harry Styles', plays: 76, pct: 76, color: '#2a1a3a' },{ name: 'Levitating', artist: 'Dua Lipa', plays: 54, pct: 55, color: '#3a1a2a' },{ name: 'Stay', artist: 'The Kid LAROI', plays: 43, pct: 44, color: '#3a2a1a' },{ name: 'good 4 u', artist: 'Olivia Rodrigo', plays: 37, pct: 32, color: '#3a1a3a' },{ name: 'Heat Waves', artist: 'Glass Animals', plays: 28, pct: 26, color: '#1a2a3a' },{ name: 'Peaches', artist: 'Justin Bieber', plays: 21, pct: 20, color: '#2a3a2a' },{ name: 'Easy On Me', artist: 'Adele', plays: 17, pct: 17, color: '#3a2a2a' },{ name: 'Bad Habits', artist: 'Ed Sheeran', plays: 12, pct: 14, color: '#2a2a3a' },{ name: 'INDUSTRY BABY', artist: 'Lil Nas X', plays: 8, pct: 11, color: '#1a3a3a' },{ name: 'Sunflower', artist: 'Post Malone', plays: 7, pct: 10, color: '#3a3a1a' },{ name: 'Cruel Summer', artist: 'Taylor Swift', plays: 6, pct: 9, color: '#3a2a1a' },{ name: 'drivers license', artist: 'Olivia Rodrigo', plays: 5, pct: 9, color: '#3a1a3a' },{ name: 'Watermelon Sugar', artist: 'Harry Styles', plays: 5, pct: 8, color: '#2a1a3a' },{ name: 'Save Your Tears', artist: 'The Weeknd', plays: 4, pct: 8, color: '#1a3a2a' },{ name: 'Happier Than Ever', artist: 'Billie Eilish', plays: 4, pct: 7, color: '#1a2a3a' },{ name: 'Montero', artist: 'Lil Nas X', plays: 3, pct: 7, color: '#3a3a1a' },{ name: 'Butter', artist: 'BTS', plays: 3, pct: 6, color: '#2a3a3a' },{ name: 'Kiss Me More', artist: 'Doja Cat', plays: 2, pct: 6, color: '#3a1a2a' },{ name: 'Positions', artist: 'Ariana Grande', plays: 2, pct: 6, color: '#3a2a3a' }],
     'year':   [{ name: 'Blinding Lights', artist: 'The Weeknd', plays: 312, pct: 94, color: '#1a3a2a' },{ name: 'As It Was', artist: 'Harry Styles', plays: 241, pct: 76, color: '#2a1a3a' },{ name: 'Levitating', artist: 'Dua Lipa', plays: 198, pct: 58, color: '#3a1a2a' },{ name: 'Stay', artist: 'The Kid LAROI', plays: 165, pct: 44, color: '#3a2a1a' },{ name: 'good 4 u', artist: 'Olivia Rodrigo', plays: 134, pct: 32, color: '#3a1a3a' },{ name: 'Heat Waves', artist: 'Glass Animals', plays: 98, pct: 26, color: '#1a2a3a' },{ name: 'Peaches', artist: 'Justin Bieber', plays: 76, pct: 20, color: '#2a3a2a' },{ name: 'Easy On Me', artist: 'Adele', plays: 54, pct: 17, color: '#3a2a2a' },{ name: 'Bad Habits', artist: 'Ed Sheeran', plays: 43, pct: 14, color: '#2a2a3a' },{ name: 'INDUSTRY BABY', artist: 'Lil Nas X', plays: 31, pct: 11, color: '#1a3a3a' },{ name: 'Sunflower', artist: 'Post Malone', plays: 28, pct: 10, color: '#3a3a1a' },{ name: 'Cruel Summer', artist: 'Taylor Swift', plays: 24, pct: 9, color: '#3a2a1a' },{ name: 'drivers license', artist: 'Olivia Rodrigo', plays: 21, pct: 9, color: '#3a1a3a' },{ name: 'Watermelon Sugar', artist: 'Harry Styles', plays: 18, pct: 8, color: '#2a1a3a' },{ name: 'Save Your Tears', artist: 'The Weeknd', plays: 16, pct: 8, color: '#1a3a2a' },{ name: 'Happier Than Ever', artist: 'Billie Eilish', plays: 14, pct: 7, color: '#1a2a3a' },{ name: 'Montero', artist: 'Lil Nas X', plays: 12, pct: 7, color: '#3a3a1a' },{ name: 'Butter', artist: 'BTS', plays: 10, pct: 6, color: '#2a3a3a' },{ name: 'Kiss Me More', artist: 'Doja Cat', plays: 9, pct: 6, color: '#3a1a2a' },{ name: 'Positions', artist: 'Ariana Grande', plays: 8, pct: 6, color: '#3a2a3a' }],
     'alltime':[{ name: 'Blinding Lights', artist: 'The Weeknd', plays: 147, pct: 94, color: '#1a3a2a' },{ name: 'As It Was', artist: 'Harry Styles', plays: 108, pct: 76, color: '#2a1a3a' },{ name: 'Levitating', artist: 'Dua Lipa', plays: 84, pct: 58, color: '#3a1a2a' },{ name: 'Stay', artist: 'The Kid LAROI', plays: 65, pct: 44, color: '#3a2a1a' },{ name: 'good 4 u', artist: 'Olivia Rodrigo', plays: 47, pct: 32, color: '#3a1a3a' },{ name: 'Heat Waves', artist: 'Glass Animals', plays: 38, pct: 26, color: '#1a2a3a' },{ name: 'Peaches', artist: 'Justin Bieber', plays: 31, pct: 20, color: '#2a3a2a' },{ name: 'Easy On Me', artist: 'Adele', plays: 27, pct: 17, color: '#3a2a2a' },{ name: 'Bad Habits', artist: 'Ed Sheeran', plays: 22, pct: 14, color: '#2a2a3a' },{ name: 'INDUSTRY BABY', artist: 'Lil Nas X', plays: 18, pct: 11, color: '#1a3a3a' },{ name: 'Sunflower', artist: 'Post Malone', plays: 16, pct: 10, color: '#3a3a1a' },{ name: 'Cruel Summer', artist: 'Taylor Swift', plays: 15, pct: 9, color: '#3a2a1a' },{ name: 'drivers license', artist: 'Olivia Rodrigo', plays: 14, pct: 9, color: '#3a1a3a' },{ name: 'Watermelon Sugar', artist: 'Harry Styles', plays: 13, pct: 8, color: '#2a1a3a' },{ name: 'Save Your Tears', artist: 'The Weeknd', plays: 12, pct: 8, color: '#1a3a2a' },{ name: 'Happier Than Ever', artist: 'Billie Eilish', plays: 11, pct: 7, color: '#1a2a3a' },{ name: 'Montero', artist: 'Lil Nas X', plays: 11, pct: 7, color: '#3a3a1a' },{ name: 'Butter', artist: 'BTS', plays: 10, pct: 6, color: '#2a3a3a' },{ name: 'Kiss Me More', artist: 'Doja Cat', plays: 9, pct: 6, color: '#3a1a2a' },{ name: 'Positions', artist: 'Ariana Grande', plays: 9, pct: 6, color: '#3a2a3a' },{ name: 'Leave The Door Open', artist: 'Silk Sonic', plays: 8, pct: 5, color: '#2a3a1a' },{ name: 'Beggin', artist: 'Maneskin', plays: 8, pct: 5, color: '#1a1a3a' },{ name: 'Shivers', artist: 'Ed Sheeran', plays: 7, pct: 5, color: '#2a2a3a' },{ name: 'Need To Know', artist: 'Doja Cat', plays: 7, pct: 4, color: '#3a1a2a' },{ name: 'Telepatia', artist: 'Kali Uchis', plays: 6, pct: 4, color: '#1a3a1a' },{ name: 'Mood', artist: '24kGoldn', plays: 6, pct: 4, color: '#3a2a1a' },{ name: 'Deja Vu', artist: 'Olivia Rodrigo', plays: 5, pct: 3, color: '#3a1a3a' },{ name: 'Traitor', artist: 'Olivia Rodrigo', plays: 5, pct: 3, color: '#3a1a3a' },{ name: 'Therefore I Am', artist: 'Billie Eilish', plays: 5, pct: 3, color: '#1a2a3a' },{ name: 'Dynamite', artist: 'BTS', plays: 4, pct: 2, color: '#2a3a3a' },{ name: 'Golden', artist: 'Harry Styles', plays: 4, pct: 2, color: '#2a1a3a' },{ name: 'Solar Power', artist: 'Lorde', plays: 4, pct: 2, color: '#1a3a1a' },{ name: 'Fancy Like', artist: 'Walker Hayes', plays: 3, pct: 2, color: '#3a2a1a' },{ name: 'Bad Guy', artist: 'Billie Eilish', plays: 3, pct: 2, color: '#1a2a3a' },{ name: 'Essence', artist: 'Wizkid', plays: 3, pct: 2, color: '#2a3a2a' },{ name: 'Permission to Dance', artist: 'BTS', plays: 3, pct: 1, color: '#2a3a3a' },{ name: 'Way 2 Sexy', artist: 'Drake', plays: 2, pct: 1, color: '#3a3a2a' },{ name: 'Woman', artist: 'Doja Cat', plays: 2, pct: 1, color: '#3a1a2a' },{ name: 'Enchanted', artist: 'Taylor Swift', plays: 1, pct: 1, color: '#3a2a1a' },{ name: 'Circles', artist: 'Post Malone', plays: 1, pct: 1, color: '#3a3a1a' },{ name: 'Rockstar', artist: 'Post Malone', plays: 1, pct: 1, color: '#3a3a1a' },{ name: 'Congratulations', artist: 'Post Malone', plays: 1, pct: 1, color: '#3a3a1a' },{ name: 'White Iverson', artist: 'Post Malone', plays: 1, pct: 1, color: '#3a3a1a' },{ name: 'Psycho', artist: 'Post Malone', plays: 1, pct: 1, color: '#3a3a1a' },{ name: 'exile', artist: 'Taylor Swift', plays: 1, pct: 1, color: '#3a2a1a' },{ name: 'All Too Well', artist: 'Taylor Swift', plays: 1, pct: 1, color: '#3a2a1a' },{ name: 'Fearless', artist: 'Taylor Swift', plays: 1, pct: 1, color: '#3a2a1a' },{ name: 'Lemon Drop', artist: 'Diplo', plays: 1, pct: 1, color: '#2a1a2a' },{ name: 'Heat', artist: 'Beyoncé', plays: 1, pct: 1, color: '#3a3a1a' }],
   };
 
-  const topArtistsData = {
+  const _topArtistsData2 = {
     week:    [{ name: 'The Weeknd', plays: 24, color: '#1a3a2a' },{ name: 'Harry Styles', plays: 18, color: '#2a1a3a' },{ name: 'Dua Lipa', plays: 15, color: '#3a1a2a' },{ name: 'Taylor Swift', plays: 11, color: '#3a2a1a' },{ name: 'Olivia Rodrigo', plays: 8, color: '#3a1a3a' },{ name: 'Billie Eilish', plays: 7, color: '#1a2a3a' },{ name: 'Post Malone', plays: 6, color: '#3a3a1a' },{ name: 'Ed Sheeran', plays: 5, color: '#2a2a3a' },{ name: 'Glass Animals', plays: 4, color: '#1a2a3a' },{ name: 'Justin Bieber', plays: 4, color: '#2a3a2a' },{ name: 'Doja Cat', plays: 3, color: '#3a1a2a' },{ name: 'Ariana Grande', plays: 3, color: '#3a2a3a' },{ name: 'BTS', plays: 3, color: '#2a3a3a' },{ name: 'Lil Nas X', plays: 2, color: '#3a3a1a' },{ name: 'Adele', plays: 2, color: '#3a2a2a' },{ name: 'SZA', plays: 2, color: '#3a2a1a' },{ name: 'Drake', plays: 2, color: '#3a3a2a' },{ name: 'Silk Sonic', plays: 1, color: '#2a3a1a' },{ name: 'Maneskin', plays: 1, color: '#1a1a3a' },{ name: 'Kali Uchis', plays: 1, color: '#1a3a1a' }],
     month:   [{ name: 'Dua Lipa', plays: 67, color: '#3a1a2a' },{ name: 'The Weeknd', plays: 58, color: '#1a3a2a' },{ name: 'Taylor Swift', plays: 44, color: '#3a2a1a' },{ name: 'Harry Styles', plays: 39, color: '#2a1a3a' },{ name: 'Glass Animals', plays: 21, color: '#1a2a3a' },{ name: 'Olivia Rodrigo', plays: 19, color: '#3a1a3a' },{ name: 'Billie Eilish', plays: 17, color: '#1a2a3a' },{ name: 'Post Malone', plays: 14, color: '#3a3a1a' },{ name: 'Ed Sheeran', plays: 12, color: '#2a2a3a' },{ name: 'Justin Bieber', plays: 10, color: '#2a3a2a' },{ name: 'Doja Cat', plays: 9, color: '#3a1a2a' },{ name: 'BTS', plays: 8, color: '#2a3a3a' },{ name: 'Ariana Grande', plays: 7, color: '#3a2a3a' },{ name: 'Adele', plays: 6, color: '#3a2a2a' },{ name: 'Lil Nas X', plays: 5, color: '#3a3a1a' },{ name: 'SZA', plays: 5, color: '#3a2a1a' },{ name: 'Drake', plays: 4, color: '#3a3a2a' },{ name: 'Silk Sonic', plays: 3, color: '#2a3a1a' },{ name: 'Maneskin', plays: 3, color: '#1a1a3a' },{ name: 'Kali Uchis', plays: 2, color: '#1a3a1a' }],
     year:    [{ name: 'The Weeknd', plays: 312, color: '#1a3a2a' },{ name: 'Dua Lipa', plays: 278, color: '#3a1a2a' },{ name: 'Harry Styles', plays: 201, color: '#2a1a3a' },{ name: 'Olivia Rodrigo', plays: 166, color: '#3a1a3a' },{ name: 'Taylor Swift', plays: 143, color: '#3a2a1a' },{ name: 'Billie Eilish', plays: 121, color: '#1a2a3a' },{ name: 'Post Malone', plays: 98, color: '#3a3a1a' },{ name: 'Ed Sheeran', plays: 87, color: '#2a2a3a' },{ name: 'Glass Animals', plays: 74, color: '#1a2a3a' },{ name: 'Justin Bieber', plays: 61, color: '#2a3a2a' },{ name: 'Doja Cat', plays: 55, color: '#3a1a2a' },{ name: 'BTS', plays: 48, color: '#2a3a3a' },{ name: 'Ariana Grande', plays: 43, color: '#3a2a3a' },{ name: 'Adele', plays: 38, color: '#3a2a2a' },{ name: 'Lil Nas X', plays: 34, color: '#3a3a1a' },{ name: 'SZA', plays: 29, color: '#3a2a1a' },{ name: 'Drake', plays: 27, color: '#3a3a2a' },{ name: 'Silk Sonic', plays: 21, color: '#2a3a1a' },{ name: 'Maneskin', plays: 18, color: '#1a1a3a' },{ name: 'Kali Uchis', plays: 14, color: '#1a3a1a' }],
     alltime: [{ name: 'The Weeknd', plays: 891, color: '#1a3a2a' },{ name: 'Dua Lipa', plays: 734, color: '#3a1a2a' },{ name: 'Harry Styles', plays: 612, color: '#2a1a3a' },{ name: 'Taylor Swift', plays: 589, color: '#3a2a1a' },{ name: 'Olivia Rodrigo', plays: 421, color: '#3a1a3a' },{ name: 'Billie Eilish', plays: 398, color: '#1a2a3a' },{ name: 'Post Malone', plays: 312, color: '#3a3a1a' },{ name: 'Ed Sheeran', plays: 287, color: '#2a2a3a' },{ name: 'Glass Animals', plays: 241, color: '#1a2a3a' },{ name: 'Justin Bieber', plays: 198, color: '#2a3a2a' },{ name: 'Doja Cat', plays: 176, color: '#3a1a2a' },{ name: 'BTS', plays: 154, color: '#2a3a3a' },{ name: 'Ariana Grande', plays: 143, color: '#3a2a3a' },{ name: 'Adele', plays: 128, color: '#3a2a2a' },{ name: 'Lil Nas X', plays: 112, color: '#3a3a1a' },{ name: 'SZA', plays: 98, color: '#3a2a1a' },{ name: 'Drake', plays: 87, color: '#3a3a2a' },{ name: 'Silk Sonic', plays: 71, color: '#2a3a1a' },{ name: 'Maneskin', plays: 58, color: '#1a1a3a' },{ name: 'Kali Uchis', plays: 44, color: '#1a3a1a' }],
   };
 
-  const followedArtists = [
+  const _followedArtists2 = [
     { name: 'Olivia Rodrigo', followedAgo: 'Followed 2 days ago', color: '#3a1a3a' },
     { name: 'Billie Eilish', followedAgo: 'Followed 1 week ago', color: '#1a2a3a' },
     { name: 'Sabrina Carpenter', followedAgo: 'Followed 2 weeks ago', color: '#2a3a1a' },
@@ -1071,7 +1245,7 @@
     { name: 'Ed Sheeran', followedAgo: 'Followed 10 months ago', color: '#2a2a3a' },
   ];
 
-  const allArtists = [
+  const _allArtists2 = [
     { name: 'Adele', color: '#3a2a2a' },{ name: 'Ariana Grande', color: '#3a2a3a' },{ name: 'Beyoncé', color: '#3a3a1a' },
     { name: 'Billie Eilish', color: '#1a2a3a' },{ name: 'BTS', color: '#2a3a3a' },{ name: 'Charli XCX', color: '#1a3a2a' },
     { name: 'Clairo', color: '#1a2a2a' },{ name: 'Diplo', color: '#2a1a2a' },{ name: 'Doja Cat', color: '#3a1a2a' },
@@ -1090,17 +1264,17 @@
   }
 
   // ── STATS DUMMY DATA ─────────────────────────────────────────
-  const hourData = [2,1,1,1,2,3,5,8,6,4,3,4,7,9,8,6,5,8,12,15,14,11,8,4];
-  const dayData  = [45,38,52,41,67,89,74];
-  const genres   = [
+  const _hourData2 = [2,1,1,1,2,3,5,8,6,4,3,4,7,9,8,6,5,8,12,15,14,11,8,4];
+  const _dayData2  = [45,38,52,41,67,89,74];
+  const _genres2   = [
     { name: 'Pop', count: 42, top: true },{ name: 'R&B', count: 28, top: true },
     { name: 'Hip-Hop', count: 24, top: true },{ name: 'Indie Pop', count: 18, top: false },
     { name: 'Dance Pop', count: 16, top: false },{ name: 'Soul', count: 12, top: false },
     { name: 'Alternative', count: 10, top: false },{ name: 'Electropop', count: 8, top: false },
     { name: 'Folk', count: 6, top: false },{ name: 'K-Pop', count: 5, top: false },
   ];
-  const mainstreamScore = 72;
-  const mainstreamArtists = [
+  const _mainstreamScore2 = 72;
+  const _mainstreamArtists2 = [
     { name: 'The Weeknd', popularity: 96, color: '#1a3a2a' },
     { name: 'Harry Styles', popularity: 91, color: '#2a1a3a' },
     { name: 'Taylor Swift', popularity: 98, color: '#3a2a1a' },
@@ -1110,7 +1284,7 @@
   ];
 
   // ── TOOLS DUMMY DATA ─────────────────────────────────────────
-  const likedArtistsList = [
+  const _likedArtistsList2 = [
     { name: 'The Weeknd', color: '#1a3a2a', following: true },
     { name: 'Harry Styles', color: '#2a1a3a', following: true },
     { name: 'Olivia Rodrigo', color: '#3a1a3a', following: true },
@@ -1137,28 +1311,8 @@
     { name: 'Bon Iver', color: '#2a3a2a', following: false },
     { name: 'Beyoncé', color: '#3a3a1a', following: false },
     { name: 'Clairo', color: '#1a2a2a', following: false },
-    { name: '21 Savage', color: '#3a1a2a', following: false },
-    { name: 'Ty Dolla Sign', color: '#2a1a3a', following: false },
-    { name: 'BTS', color: '#2a3a3a', following: false },
   ];
-
-  const newSongs = [
-    { name: 'Popular', artist: 'The Weeknd ft Playboi Carti', mainArtist: 'The Weeknd', color: '#1a3a2a', daysAgo: 1, isFeature: false },
-    { name: 'As It Was (Remix)', artist: 'Harry Styles', mainArtist: 'Harry Styles', color: '#2a1a3a', daysAgo: 2, isFeature: false },
-    { name: 'vampire', artist: 'Olivia Rodrigo', mainArtist: 'Olivia Rodrigo', color: '#3a1a3a', daysAgo: 3, isFeature: false },
-    { name: 'Cruel Summer (Live)', artist: 'Taylor Swift', mainArtist: 'Taylor Swift', color: '#3a2a1a', daysAgo: 4, isFeature: false },
-    { name: 'Moth', artist: 'Billie Eilish', mainArtist: 'Billie Eilish', color: '#1a2a3a', daysAgo: 5, isFeature: false },
-    { name: 'Escapism', artist: 'Doja Cat ft The Weeknd', mainArtist: 'Doja Cat', color: '#3a1a2a', daysAgo: 6, isFeature: true },
-    { name: 'Creepin', artist: 'Metro Boomin ft The Weeknd', mainArtist: 'Metro Boomin', color: '#1a3a2a', daysAgo: 8, isFeature: true },
-    { name: 'Golden Hour', artist: 'Kali Uchis', mainArtist: 'Kali Uchis', color: '#1a3a1a', daysAgo: 9, isFeature: false },
-    { name: 'Bad to You', artist: 'Olivia Rodrigo ft BTS', mainArtist: 'Olivia Rodrigo', color: '#3a1a3a', daysAgo: 11, isFeature: true },
-    { name: 'Anti-Hero', artist: 'Taylor Swift', mainArtist: 'Taylor Swift', color: '#3a2a1a', daysAgo: 13, isFeature: false },
-    { name: 'What Was I Made For', artist: 'Billie Eilish', mainArtist: 'Billie Eilish', color: '#1a2a3a', daysAgo: 15, isFeature: false },
-    { name: 'Rich Flex', artist: 'Drake ft 21 Savage', mainArtist: 'Drake', color: '#3a3a2a', daysAgo: 18, isFeature: true },
-    { name: 'As You Are', artist: 'The Weeknd', mainArtist: 'The Weeknd', color: '#1a3a2a', daysAgo: 22, isFeature: false },
-    { name: 'Dance The Night', artist: 'Dua Lipa', mainArtist: 'Dua Lipa', color: '#3a1a2a', daysAgo: 25, isFeature: false },
-    { name: 'Flowers', artist: 'Miley Cyrus ft Harry Styles', mainArtist: 'Miley Cyrus', color: '#2a1a3a', daysAgo: 28, isFeature: true },
-  ];
+  // liveNewSongs is populated by fetchNewSongsFromSpotify()
 
   // each playlist entry is a track ID (unique per song); same ID twice = duplicate
   const playlistsData = [
@@ -1467,24 +1621,52 @@
     }).join('');
   }
 
-  function renderNewSongs() {
+  function renderNewSongsFromLive() {
     const duration = parseInt(document.getElementById('ns-duration')?.value || '7');
     const mode = state.nsMode || 'feat';
-    const filtered = newSongs.filter(s => {
+    const filtered = liveNewSongs.filter(s => {
       if (s.daysAgo > duration) return false;
       if (mode === 'main' && s.isFeature) return false;
       return true;
     });
     document.getElementById('new-songs-list').innerHTML = filtered.length ? filtered.map(s => `
       <div class="new-song-row">
-        <div class="new-thumb" style="background:${s.color}"></div>
+        ${s.imageUrl ? `<img class="new-thumb" src="${s.imageUrl}" style="object-fit:cover;" />` : `<div class="new-thumb" style="background:#1a1a1a"></div>`}
         <div class="new-song-info">
           <div class="new-song-name">${s.name}</div>
           <div class="new-song-artist">${s.artist}</div>
         </div>
         ${s.isFeature ? '<div class="new-badge" style="background:rgba(249,115,22,0.15);color:#F97316;">feature</div>' : ''}
-        <div class="new-badge" style="margin-left:4px;">${s.daysAgo === 1 ? 'today' : s.daysAgo + 'd ago'}</div>
+        <div class="new-badge" style="margin-left:4px;">${s.daysAgo === 0 ? 'today' : s.daysAgo + 'd ago'}</div>
+        <div onclick="markSongSeen('${s.id}')" style="font-size:18px;color:#444;cursor:pointer;padding:2px 8px;border-radius:4px;flex-shrink:0;line-height:1;" title="Dismiss">×</div>
       </div>`).join('') : '<div style="font-size:12px;color:#444;padding:12px 0;">No new releases in this period.</div>';
+  }
+
+  async function renderNewSongs() {
+    const el = document.getElementById('new-songs-list');
+    if (!el) return;
+    if (nsLoading) return;
+    if (nsLoaded) { renderNewSongsFromLive(); return; }
+    const token = await getValidToken();
+    if (!token) {
+      el.innerHTML = '<div style="font-size:12px;color:#555;padding:16px 0;">Connect Spotify using the "Push to Spotify" button to load real new releases from artists you follow.</div>';
+      return;
+    }
+    nsLoading = true;
+    el.innerHTML = '<div style="font-size:12px;color:#555;padding:16px 0;">Fetching new releases from your followed artists…</div>';
+    try {
+      const userId = await getSpotifyUserId();
+      const songs = await fetchNewSongsFromSpotify();
+      const seenIds = userId ? await getSeenSongIds(userId) : new Set();
+      liveNewSongs = (songs || []).filter(s => !seenIds.has(s.id));
+      nsLoaded = true;
+    } catch(e) {
+      el.innerHTML = `<div style="font-size:12px;color:#f87171;padding:12px 0;">Error: ${e.message}</div>`;
+      nsLoading = false;
+      return;
+    }
+    nsLoading = false;
+    renderNewSongsFromLive();
   }
 
   function renderSelectPlaylist() {
@@ -1543,8 +1725,6 @@
   }
 
   function render() {
-
-    if (!recentTracks || !recentTracks.length) return;
     const n = state.entries;
     let recent = recentTracks.slice(0, n.tracks);
     if (state.recentSubtab === 'liked') recent = recentTracks.filter(t => t.liked).slice(0, n.tracks);
@@ -1781,16 +1961,95 @@
     }
   }
 
-  // Force initial render — goTo skips render when state already matches defaults
-  render();
+  function showLoginPage() {
+    document.getElementById('login-page').style.display = 'flex';
+    document.getElementById('main-app').style.display = 'none';
+  }
+
+  function showMainApp() {
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    render();
+    initFromHash();
+  }
+
+  async function spotifyLoginApp() {
+    const verifier = base64url(randomBytes(32));
+    const challenge = await generateCodeChallenge(verifier);
+    localStorage.setItem('sp_verifier', verifier);
+    localStorage.setItem('sp_login_pending', '1');
+    const params = new URLSearchParams({
+      client_id: SPOTIFY_CLIENT_ID,
+      response_type: 'code',
+      redirect_uri: SPOTIFY_REDIRECT_URI,
+      scope: SPOTIFY_SCOPES,
+      code_challenge_method: 'S256',
+      code_challenge: challenge,
+    });
+    window.location.href = 'https://accounts.spotify.com/authorize?' + params;
+  }
+
+  async function checkAuthAndInit() {
+    await handleSpotifyCallback();
+    loadAutoSyncSettings();
+    updateNsPushStatus();
+    updateAutoSyncUI();
+    if (state.nsAutoSync) scheduleAutoSync();
+    const token = await getValidToken();
+    if (token) {
+      showMainApp();
+    } else {
+      showLoginPage();
+    }
+  }
 
   window.addEventListener('hashchange', initFromHash);
-  handleSpotifyCallback();
-  loadAutoSyncSettings();
-  updateNsPushStatus();
-  updateAutoSyncUI();
-  if (state.nsAutoSync) scheduleAutoSync();
-  initFromHash();
+  checkAuthAndInit();
+
+  // ── SPOTIFY LOGOUT ───────────────────────────────────────────
+  function spotifyLogout() {
+    ['sp_access_token','sp_refresh_token','sp_token_expiry','sp_user_id',
+     'sp_push_pending','sp_verifier','ns_playlist_id','ns_playlist_name',
+     'ns_last_synced','ns_autosync','ns_autosync_interval','ns_sync_mode','ns_next_sync'
+    ].forEach(k => localStorage.removeItem(k));
+    liveNewSongs = [];
+    nsLoaded = false;
+    nsLoading = false;
+    clearAutoSyncTimers();
+    updateNsPushStatus();
+    document.getElementById('profile-wrap').classList.remove('open');
+    showLoginPage();
+  }
+
+  // ── PWA INSTALL ──────────────────────────────────────────────
+  let deferredInstallPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    const banner = document.getElementById('pwa-banner');
+    if (banner) banner.style.display = 'flex';
+  });
+
+  function installPwa() {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(() => {
+      deferredInstallPrompt = null;
+      dismissPwaBanner();
+    });
+  }
+
+  function dismissPwaBanner() {
+    const banner = document.getElementById('pwa-banner');
+    if (banner) banner.style.display = 'none';
+  }
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
 </script>
 </body>
 </html>
