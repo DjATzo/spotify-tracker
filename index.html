@@ -340,9 +340,8 @@
     </div>
     <div class="tab-content" id="tracks-listened">
       <div class="subtabs">
-        <div class="subtab active" onclick="setListenedSubtab('7days',this)">Last 7 days</div>
-        <div class="subtab" onclick="setListenedSubtab('30days',this)">Last 30 days</div>
-        <div class="subtab" onclick="setListenedSubtab('year',this)">This year</div>
+        <div class="subtab active" onclick="setListenedSubtab('7days',this)">Last 4 weeks</div>
+        <div class="subtab" onclick="setListenedSubtab('30days',this)">Last 6 months</div>
         <div class="subtab" onclick="setListenedSubtab('alltime',this)">All time</div>
       </div>
       <div class="track-list" id="list-listened"></div>
@@ -596,6 +595,17 @@
       </div>
 
       <div class="settings-section">
+        <div class="settings-section-title">Play count</div>
+        <div class="settings-row">
+          <div class="settings-label">Recently Played count</div>
+          <div style="display:flex;gap:6px;">
+            <div id="rsm-recent" class="pill active" onclick="setListenedCountMode('rank')">Rank (Spotify)</div>
+            <div id="rsm-plays" class="pill" onclick="setListenedCountMode('plays')">Play count (app)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
         <div class="settings-section-title">Language</div>
         <div class="settings-row">
           <div class="settings-label">Language</div>
@@ -697,6 +707,85 @@
 
   async function setCachedNewSongs(userId, songs) {
     try { await rtdb.ref(`users/${userId}/cache/newSongs`).set({ songs: JSON.stringify(songs), fetchedAt: Date.now() }); } catch(e) {}
+  }
+
+  // ── FIREBASE USER DATA ───────────────────────────────────────
+  let currentUserId = null;
+  let userPlays = {};
+
+  async function loadUserSettings(userId) {
+    try {
+      const snap = await rtdb.ref(`users/${userId}/settings`).get();
+      if (!snap.exists()) return;
+      const d = snap.val();
+      if (d.nsPlaylistId   != null) state.nsPlaylistId   = d.nsPlaylistId;
+      if (d.nsPlaylistName != null) state.nsPlaylistName = d.nsPlaylistName;
+      if (d.nsLastSynced   != null) state.nsLastSynced   = d.nsLastSynced;
+      if (d.nsNextSync     != null) state.nsNextSync     = d.nsNextSync;
+      if (d.nsAutoSync      != null) state.nsAutoSync      = d.nsAutoSync;
+      if (d.nsAutoInterval  != null) state.nsAutoInterval  = d.nsAutoInterval;
+      if (d.nsSyncMode      != null) state.nsSyncMode      = d.nsSyncMode;
+      if (d.listenedCountMode != null) state.listenedCountMode = d.listenedCountMode;
+    } catch(e) {}
+  }
+
+  function saveUserSettings() {
+    if (!currentUserId) return;
+    rtdb.ref(`users/${currentUserId}/settings`).update({
+      nsPlaylistId:   state.nsPlaylistId,
+      nsPlaylistName: state.nsPlaylistName,
+      nsLastSynced:   state.nsLastSynced,
+      nsNextSync:     state.nsNextSync,
+      nsAutoSync:     state.nsAutoSync,
+      nsAutoInterval: state.nsAutoInterval,
+      nsSyncMode:     state.nsSyncMode,
+      listenedCountMode: state.listenedCountMode,
+    }).catch(() => {});
+  }
+
+  async function loadFutureFromFirebase(userId) {
+    try {
+      const snap = await rtdb.ref(`users/${userId}/futureItems`).get();
+      if (!snap.exists()) return;
+      const saved = snap.val();
+      futureItems.forEach(item => { if (saved[item.id] !== undefined) item.done = !!saved[item.id]; });
+    } catch(e) {}
+  }
+
+  function saveFutureToFirebase() {
+    if (!currentUserId) return;
+    const map = {};
+    futureItems.forEach(item => { map[item.id] = item.done; });
+    rtdb.ref(`users/${currentUserId}/futureItems`).set(map).catch(() => {});
+  }
+
+  async function accumulatePlays(items, userId) {
+    try {
+      const snap = await rtdb.ref(`users/${userId}/plays`).get();
+      userPlays = snap.exists() ? snap.val() : {};
+    } catch(e) { userPlays = {}; }
+
+    const updates = {};
+    items.forEach(item => {
+      const id = item.track.id;
+      const playedAt = new Date(item.played_at).getTime();
+      if (!userPlays[id]) userPlays[id] = { count: 0, name: item.track.name, artist: item.track.artists.map(a => a.name).join(', '), imageUrl: item.track.album.images?.[1]?.url || null, lastPlayed: item.played_at, seen: {} };
+      if (!userPlays[id].seen) userPlays[id].seen = {};
+      if (!userPlays[id].seen[playedAt]) {
+        userPlays[id].seen[playedAt] = true;
+        userPlays[id].count = (userPlays[id].count || 0) + 1;
+        if (item.played_at > (userPlays[id].lastPlayed || '')) userPlays[id].lastPlayed = item.played_at;
+        updates[`users/${userId}/plays/${id}/count`] = userPlays[id].count;
+        updates[`users/${userId}/plays/${id}/name`] = item.track.name;
+        updates[`users/${userId}/plays/${id}/artist`] = item.track.artists.map(a => a.name).join(', ');
+        updates[`users/${userId}/plays/${id}/imageUrl`] = item.track.album.images?.[1]?.url || null;
+        updates[`users/${userId}/plays/${id}/lastPlayed`] = item.played_at;
+        updates[`users/${userId}/plays/${id}/seen/${playedAt}`] = true;
+      }
+    });
+    if (Object.keys(updates).length) {
+      try { await rtdb.ref('/').update(updates); } catch(e) {}
+    }
   }
 
   let liveNewSongs = [];
@@ -844,14 +933,15 @@
     ]);
 
     if (recent?.items?.length) {
-      // count actual play occurrences per track in the 50-item history
       const playCounts = {}, playAgo = {}, playImage = {};
       recent.items.forEach(item => {
         const id = item.track.id;
         playCounts[id] = (playCounts[id] || 0) + 1;
-        if (!playAgo[id]) playAgo[id] = item.played_at; // most recent first
+        if (!playAgo[id]) playAgo[id] = item.played_at;
         if (!playImage[id]) playImage[id] = item.track.album.images?.[1]?.url || null;
       });
+      const userId = await getSpotifyUserId();
+      if (userId) await accumulatePlays(recent.items, userId);
       const seen = new Set();
       recentTracks.length = 0;
       recent.items.forEach(item => {
@@ -861,16 +951,22 @@
         recentTracks.push({
           name: item.track.name,
           artist: item.track.artists.map(a => a.name).join(', '),
-          plays: playCounts[id],
+          rankCount: playCounts[id],
+          trackedCount: userPlays[id]?.count || playCounts[id],
           ago: timeAgo(playAgo[id]),
-          pct: Math.min(100, Math.round((playCounts[id] / Math.max(...Object.values(playCounts))) * 100)),
+          lastPlayed: playAgo[id],
           imageUrl: playImage[id],
           color: '#1a1a1a',
           liked: false,
           id,
         });
       });
-      recentTracks.sort((a, b) => b.plays - a.plays);
+      const maxTracked = Math.max(...recentTracks.map(t => t.trackedCount));
+      const maxRank = Math.max(...recentTracks.map(t => t.rankCount));
+      recentTracks.forEach(t => {
+        t.pctTracked = Math.min(100, Math.round((t.trackedCount / maxTracked) * 100));
+        t.pctRank    = Math.min(100, Math.round((t.rankCount    / maxRank)    * 100));
+      });
     }
 
     function mapTracks(data) {
@@ -1117,9 +1213,9 @@
   }
 
   function updateNsPushStatus() {
-    const id = localStorage.getItem('ns_playlist_id');
-    const name = localStorage.getItem('ns_playlist_name');
-    const synced = parseInt(localStorage.getItem('ns_last_synced') || '0');
+    const id = state.nsPlaylistId;
+    const name = state.nsPlaylistName;
+    const synced = state.nsLastSynced;
     const btn = document.getElementById('ns-push-btn');
     if (!id) {
       setNsPushStatus('No playlist synced yet');
@@ -1163,8 +1259,8 @@
     }
 
     const name = document.getElementById('ns-playlist-name').value.trim() || 'New Releases';
-    const storedId = localStorage.getItem('ns_playlist_id');
-    const storedName = localStorage.getItem('ns_playlist_name');
+    const storedId = state.nsPlaylistId;
+    const storedName = state.nsPlaylistName;
 
     if (!silent && btn) btn.textContent = 'Fetching tracks…';
 
@@ -1205,19 +1301,20 @@
 
       if (!silent && btn) btn.textContent = 'Syncing tracks…';
       await syncPlaylistTracks(token, targetId, uris);
-      localStorage.setItem('ns_playlist_id', targetId);
-      localStorage.setItem('ns_playlist_name', name);
+      state.nsPlaylistId = targetId;
+      state.nsPlaylistName = name;
     } else {
       if (name !== storedName) {
         if (!silent && btn) btn.textContent = 'Renaming…';
         await spotifyApi('PUT', `/playlists/${storedId}`, { name }, token);
-        localStorage.setItem('ns_playlist_name', name);
+        state.nsPlaylistName = name;
       }
       if (!silent && btn) btn.textContent = 'Syncing tracks…';
       await syncPlaylistTracks(token, storedId, uris);
     }
 
-    localStorage.setItem('ns_last_synced', Date.now());
+    state.nsLastSynced = Date.now();
+    saveUserSettings();
     updateNsPushStatus();
   }
 
@@ -1227,36 +1324,33 @@
 
   function toggleAutoSync() {
     state.nsAutoSync = !state.nsAutoSync;
-    saveAutoSyncSettings();
+    saveUserSettings();
     updateAutoSyncUI();
     if (state.nsAutoSync) {
       scheduleAutoSync();
     } else {
       clearAutoSyncTimers();
-      localStorage.removeItem('ns_next_sync');
+      state.nsNextSync = 0;
+      saveUserSettings();
     }
   }
 
   function setAutoInterval(h) {
     state.nsAutoInterval = h;
     [1,6,12,24].forEach(v => document.getElementById('ns-ai-'+v)?.classList.toggle('active', v === h));
-    saveAutoSyncSettings();
     if (state.nsAutoSync) {
-      localStorage.setItem('ns_next_sync', Date.now() + h * 3600000);
+      state.nsNextSync = Date.now() + h * 3600000;
       scheduleAutoSync();
     }
+    saveUserSettings();
   }
 
   function saveAutoSyncSettings() {
-    localStorage.setItem('ns_autosync', state.nsAutoSync ? 'on' : 'off');
-    localStorage.setItem('ns_autosync_interval', state.nsAutoInterval);
-    localStorage.setItem('ns_sync_mode', state.nsSyncMode);
+    saveUserSettings();
   }
 
   function loadAutoSyncSettings() {
-    state.nsAutoSync = localStorage.getItem('ns_autosync') === 'on';
-    state.nsAutoInterval = parseInt(localStorage.getItem('ns_autosync_interval') || '6');
-    state.nsSyncMode = localStorage.getItem('ns_sync_mode') || 'merge';
+    // settings are loaded from Firebase in checkAuthAndInit; this is a no-op
   }
 
   function clearAutoSyncTimers() {
@@ -1268,11 +1362,12 @@
     clearAutoSyncTimers();
     if (!state.nsAutoSync) return;
 
-    const next = parseInt(localStorage.getItem('ns_next_sync') || '0');
+    const next = state.nsNextSync || 0;
     const delay = Math.max(0, next - Date.now());
 
     autoSyncTimer = setTimeout(async () => {
-      localStorage.setItem('ns_next_sync', Date.now() + state.nsAutoInterval * 3600000);
+      state.nsNextSync = Date.now() + state.nsAutoInterval * 3600000;
+      saveUserSettings();
       try { await nsSpotifyPushCore({ silent: true }); } catch(e) {}
       updateAutoSyncCountdown();
       scheduleAutoSync();
@@ -1296,7 +1391,7 @@
   function updateAutoSyncCountdown() {
     const el = document.getElementById('ns-autosync-status');
     if (!el || !state.nsAutoSync) return;
-    const next = parseInt(localStorage.getItem('ns_next_sync') || '0');
+    const next = state.nsNextSync || 0;
     if (!next) { el.textContent = 'Syncing soon…'; return; }
     const ms = next - Date.now();
     if (ms <= 0) { el.textContent = 'Syncing…'; return; }
@@ -1343,6 +1438,11 @@
     nsSyncMode: 'merge',
     nsAutoSync: false,
     nsAutoInterval: 6,
+    nsPlaylistId: null,
+    nsPlaylistName: 'New Releases',
+    nsLastSynced: 0,
+    nsNextSync: 0,
+    listenedCountMode: 'rank',
     tracksTab: 'recent',
     artistsTab: 'top',
     statsTab: 'activity',
@@ -1394,17 +1494,8 @@
     { id: 33, text: 'Auto-sync via Firestore + Cloud Functions (runs when app is closed)', section: 'Tier 2', done: false },
   ];
 
-  (function loadFutureState() {
-    try {
-      const saved = JSON.parse(localStorage.getItem('futureItems') || '{}');
-      futureItems.forEach(item => { if (!item.done && saved[item.id] !== undefined) item.done = saved[item.id]; });
-    } catch(e) {}
-  })();
-
   function saveFutureState() {
-    const map = {};
-    futureItems.forEach(item => { map[item.id] = item.done; });
-    localStorage.setItem('futureItems', JSON.stringify(map));
+    saveFutureToFirebase();
   }
 
   function toggleFutureItem(id) {
@@ -1452,7 +1543,7 @@
       </div>
       <div class="track-right">
         <div class="play-count">${isListened ? '#' + t.plays : t.plays}</div>
-        <div class="plays-label">${isListened ? 'rank' : 'plays'}</div>
+        <div class="plays-label">${isListened ? (state.listenedCountMode === 'plays' ? 'plays' : 'rank') : 'plays'}</div>
         ${isListened ? '<div class="badge-alltime">top</div>' : `<div class="time-ago">${t.ago}</div>`}
       </div>
     </div>`;
@@ -1661,12 +1752,22 @@
 
   function render() {
     const n = state.entries;
-    let recent = recentTracks.slice(0, n.tracks);
-    if (state.recentSubtab === 'liked') recent = recentTracks.filter(t => t.liked).slice(0, n.tracks);
-    if (state.recentSubtab === 'notliked') recent = recentTracks.filter(t => !t.liked).slice(0, n.tracks);
+    const sortedRecent = recentTracks.slice()
+      .map(t => ({ ...t, plays: t.trackedCount, pct: t.pctTracked }))
+      .sort((a, b) => (b.lastPlayed || '').localeCompare(a.lastPlayed || ''));
+    let recent = sortedRecent.slice(0, n.tracks);
+    if (state.recentSubtab === 'liked') recent = sortedRecent.filter(t => t.liked).slice(0, n.tracks);
+    if (state.recentSubtab === 'notliked') recent = sortedRecent.filter(t => !t.liked).slice(0, n.tracks);
     document.getElementById('list-recent').innerHTML = recent.map((t, i) => renderTrackRow(t, i, false)).join('');
     try {
-      const ld = listenedData[state.listenedSubtab] || listenedData['7days'];
+      const ld = (listenedData[state.listenedSubtab] || listenedData['7days']).map(t => {
+        if (state.listenedCountMode === 'plays' && userPlays[t.id]?.count) {
+          const c = userPlays[t.id].count;
+          const maxC = Math.max(...(listenedData[state.listenedSubtab] || listenedData['7days']).map(x => userPlays[x.id]?.count || 0), 1);
+          return { ...t, plays: c, pct: Math.round((c / maxC) * 100) };
+        }
+        return t;
+      });
       document.getElementById('list-listened').innerHTML = ld.slice(0, n.tracks).map((t, i) => renderTrackRow(t, i, true)).join('');
       document.getElementById('list-top-artists').innerHTML = (topArtistsData[state.topSubtab] || topArtistsData.week).slice(0, n.artists).map(renderArtistRow).join('');
       document.getElementById('list-followed').innerHTML = followedArtists.slice(0, n.artists).map(renderArtistRow).join('');
@@ -1751,9 +1852,19 @@
   });
 
   // ── SETTINGS ─────────────────────────────────────────────────
+  function setListenedCountMode(mode) {
+    state.listenedCountMode = mode;
+    document.getElementById('rsm-recent').classList.toggle('active', mode === 'rank');
+    document.getElementById('rsm-plays').classList.toggle('active', mode === 'plays');
+    saveUserSettings();
+    render();
+  }
+
   function openSettings() {
     document.getElementById('settings-modal').classList.add('open');
     document.getElementById('profile-wrap').classList.remove('open');
+    document.getElementById('rsm-recent').classList.toggle('active', state.listenedCountMode !== 'plays');
+    document.getElementById('rsm-plays').classList.toggle('active', state.listenedCountMode === 'plays');
   }
 
   function closeSettings() {
@@ -1932,12 +2043,18 @@
 
   async function checkAuthAndInit() {
     await handleSpotifyCallback();
-    loadAutoSyncSettings();
-    updateNsPushStatus();
-    updateAutoSyncUI();
-    if (state.nsAutoSync) scheduleAutoSync();
     const token = await getValidToken();
     if (token) {
+      currentUserId = await getSpotifyUserId();
+      if (currentUserId) {
+        await Promise.all([
+          loadUserSettings(currentUserId),
+          loadFutureFromFirebase(currentUserId),
+        ]);
+      }
+      updateNsPushStatus();
+      updateAutoSyncUI();
+      if (state.nsAutoSync) scheduleAutoSync();
       showMainApp();
     } else {
       showLoginPage();
@@ -1950,9 +2067,13 @@
   // ── SPOTIFY LOGOUT ───────────────────────────────────────────
   function spotifyLogout() {
     ['sp_access_token','sp_refresh_token','sp_token_expiry','sp_user_id',
-     'sp_push_pending','sp_verifier','ns_playlist_id','ns_playlist_name',
-     'ns_last_synced','ns_autosync','ns_autosync_interval','ns_sync_mode','ns_next_sync'
+     'sp_push_pending','sp_verifier'
     ].forEach(k => localStorage.removeItem(k));
+    currentUserId = null;
+    userPlays = {};
+    state.nsPlaylistId = null; state.nsPlaylistName = 'New Releases';
+    state.nsLastSynced = 0; state.nsNextSync = 0;
+    state.nsAutoSync = false; state.nsAutoInterval = 6; state.nsSyncMode = 'merge'; state.listenedCountMode = 'rank';
     liveNewSongs = [];
     nsLoaded = false;
     nsLoading = false;
