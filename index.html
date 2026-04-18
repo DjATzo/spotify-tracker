@@ -191,6 +191,15 @@
   .swatch:hover { transform: scale(1.15); }
   .swatch.active { border-color: #fff; }
 
+  /* PLAYLIST SELECT + DUPES */
+  .playlist-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 6px; background: #111; margin-bottom: 3px; cursor: pointer; transition: background 0.15s; }
+  .playlist-row:hover { background: #161616; }
+  .playlist-row.selected { background: rgba(var(--accent-rgb),0.1); border: 0.5px solid rgba(var(--accent-rgb),0.25); }
+  .playlist-icon { width: 34px; height: 34px; border-radius: 4px; flex-shrink: 0; }
+  .playlist-name { font-size: 13px; font-weight: 500; flex: 1; }
+  .playlist-count { font-size: 11px; color: #555; flex-shrink: 0; }
+  .dupe-in { font-size: 10px; color: #555; margin-top: 2px; }
+
   /* FUTURE */
   .future-wrap { padding: 0 24px 24px; }
   .future-section-title { font-size: 11px; color: #444; text-transform: uppercase; letter-spacing: 0.06em; padding: 14px 0 6px; }
@@ -225,7 +234,7 @@
 
   <!-- NAVBAR -->
   <nav class="navbar">
-    <div class="logo">play<span>count</span><em>v8</em></div>
+    <div class="logo">play<span>count</span><em>v10</em></div>
     <div class="nav-links">
       <div class="nav-item">
         <div class="nav-item-label active" id="nav-tracks" onclick="goTo('tracks','recent')" ontouchstart="toggleDropdown('dd-tracks',event)">Tracks</div>
@@ -255,6 +264,7 @@
         <div class="nav-dropdown" id="dd-tools">
           <div class="drop-item" onclick="goTo('tools','follow-manager')">Artist follow manager</div>
           <div class="drop-item" onclick="goTo('tools','new-songs')">New songs</div>
+          <div class="drop-item" onclick="goTo('tools','remove-dupes')">Remove duplicates</div>
         </div>
       </div>
       <div class="nav-item">
@@ -424,6 +434,7 @@
       <div class="pills">
         <div class="pill active" id="pill-tools-follow-manager" onclick="setTab('tools','follow-manager')">Artist follow manager</div>
         <div class="pill" id="pill-tools-new-songs" onclick="setTab('tools','new-songs')">New songs</div>
+        <div class="pill" id="pill-tools-remove-dupes" onclick="setTab('tools','remove-dupes')">Remove duplicates</div>
       </div>
     </div>
 
@@ -500,6 +511,23 @@
           </div>
         </div>
         <div class="new-songs-list" id="new-songs-list"></div>
+      </div>
+    </div>
+
+    <!-- Remove duplicates -->
+    <div class="tab-content" id="tools-remove-dupes">
+      <div class="tools-wrap">
+        <div class="tools-header">
+          <div style="font-size:12px;color:#555;" id="dupes-header-label">Duplicates in: All playlists</div>
+          <div class="tools-actions">
+            <button class="tool-btn red" onclick="removeAllDupes()">Remove all</button>
+          </div>
+        </div>
+        <div style="margin-bottom:14px;">
+          <div style="font-size:11px;color:#444;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Filter by playlist</div>
+          <div id="playlist-select-list"></div>
+        </div>
+        <div id="dupes-list"></div>
       </div>
     </div>
   </div>
@@ -1126,6 +1154,97 @@
     { name: 'Flowers', artist: 'Miley Cyrus ft Harry Styles', mainArtist: 'Miley Cyrus', color: '#2a1a3a', daysAgo: 28, isFeature: true },
   ];
 
+  // each playlist entry is a track ID (unique per song); same ID twice = duplicate
+  const playlistsData = [
+    { id: 'p1', name: 'Liked Songs',   color: '#1a3a2a', tracks: [
+      {tid:'t01',name:'Blinding Lights',artist:'The Weeknd',color:'#1a3a2a'},
+      {tid:'t02',name:'As It Was',artist:'Harry Styles',color:'#2a1a3a'},
+      {tid:'t03',name:'Heat Waves',artist:'Glass Animals',color:'#1a2a3a'},
+      {tid:'t04',name:'Levitating',artist:'Dua Lipa',color:'#3a1a2a'},
+      {tid:'t05',name:'Peaches',artist:'Justin Bieber',color:'#2a3a2a'},
+      {tid:'t01',name:'Blinding Lights',artist:'The Weeknd',color:'#1a3a2a'},
+      {tid:'t06',name:'Easy On Me',artist:'Adele',color:'#3a2a2a'},
+      {tid:'t07',name:'Bad Habits',artist:'Ed Sheeran',color:'#2a2a3a'},
+      {tid:'t02',name:'As It Was',artist:'Harry Styles',color:'#2a1a3a'},
+      {tid:'t08',name:'Cruel Summer',artist:'Taylor Swift',color:'#3a2a1a'},
+    ]},
+    { id: 'p2', name: 'New Releases',  color: '#2a1a3a', tracks: [
+      {tid:'t09',name:'Popular',artist:'The Weeknd ft Playboi Carti',color:'#1a3a2a'},
+      {tid:'t10',name:'vampire',artist:'Olivia Rodrigo',color:'#3a1a3a'},
+      {tid:'t11',name:'Anti-Hero',artist:'Taylor Swift',color:'#3a2a1a'},
+      {tid:'t12',name:'What Was I Made For',artist:'Billie Eilish',color:'#1a2a3a'},
+      {tid:'t13',name:'Dance The Night',artist:'Dua Lipa',color:'#3a1a2a'},
+    ]},
+    { id: 'p3', name: 'Chill Vibes',   color: '#1a2a3a', tracks: [
+      {tid:'t03',name:'Heat Waves',artist:'Glass Animals',color:'#1a2a3a'},
+      {tid:'t01',name:'Blinding Lights',artist:'The Weeknd',color:'#1a3a2a'},
+      {tid:'t14',name:'Telepatia',artist:'Kali Uchis',color:'#1a3a1a'},
+      {tid:'t15',name:'Golden',artist:'Harry Styles',color:'#2a1a3a'},
+      {tid:'t16',name:'Watermelon Sugar',artist:'Harry Styles',color:'#2a1a3a'},
+      {tid:'t03',name:'Heat Waves',artist:'Glass Animals',color:'#1a2a3a'},
+    ]},
+    { id: 'p4', name: 'Workout Mix',   color: '#3a1a2a', tracks: [
+      {tid:'t04',name:'Levitating',artist:'Dua Lipa',color:'#3a1a2a'},
+      {tid:'t17',name:'INDUSTRY BABY',artist:'Lil Nas X',color:'#1a3a3a'},
+      {tid:'t18',name:'Dynamite',artist:'BTS',color:'#2a3a3a'},
+      {tid:'t04',name:'Levitating',artist:'Dua Lipa',color:'#3a1a2a'},
+      {tid:'t19',name:'Montero',artist:'Lil Nas X',color:'#3a3a1a'},
+    ]},
+    { id: 'p5', name: 'Road Trip',     color: '#3a2a1a', tracks: [
+      {tid:'t03',name:'Heat Waves',artist:'Glass Animals',color:'#1a2a3a'},
+      {tid:'t08',name:'Cruel Summer',artist:'Taylor Swift',color:'#3a2a1a'},
+      {tid:'t20',name:'Sunflower',artist:'Post Malone',color:'#3a3a1a'},
+      {tid:'t16',name:'Watermelon Sugar',artist:'Harry Styles',color:'#2a1a3a'},
+      {tid:'t07',name:'Bad Habits',artist:'Ed Sheeran',color:'#2a2a3a'},
+    ]},
+    { id: 'p6', name: 'Late Night',    color: '#1a3a3a', tracks: [
+      {tid:'t01',name:'Blinding Lights',artist:'The Weeknd',color:'#1a3a2a'},
+      {tid:'t21',name:'Save Your Tears',artist:'The Weeknd',color:'#1a3a2a'},
+      {tid:'t22',name:'drivers license',artist:'Olivia Rodrigo',color:'#3a1a3a'},
+      {tid:'t14',name:'Telepatia',artist:'Kali Uchis',color:'#1a3a1a'},
+    ]},
+    { id: 'p7', name: 'Sad Hours',     color: '#3a1a3a', tracks: [
+      {tid:'t22',name:'drivers license',artist:'Olivia Rodrigo',color:'#3a1a3a'},
+      {tid:'t06',name:'Easy On Me',artist:'Adele',color:'#3a2a2a'},
+      {tid:'t23',name:'Happier Than Ever',artist:'Billie Eilish',color:'#1a2a3a'},
+      {tid:'t24',name:'All Too Well',artist:'Taylor Swift',color:'#3a2a1a'},
+      {tid:'t22',name:'drivers license',artist:'Olivia Rodrigo',color:'#3a1a3a'},
+    ]},
+    { id: 'p8', name: 'Party Hits',    color: '#2a3a1a', tracks: [
+      {tid:'t04',name:'Levitating',artist:'Dua Lipa',color:'#3a1a2a'},
+      {tid:'t17',name:'INDUSTRY BABY',artist:'Lil Nas X',color:'#1a3a3a'},
+      {tid:'t18',name:'Dynamite',artist:'BTS',color:'#2a3a3a'},
+      {tid:'t25',name:'Kiss Me More',artist:'Doja Cat ft SZA',color:'#3a1a2a'},
+    ]},
+    { id: 'p9', name: 'Throwbacks',    color: '#3a2a3a', tracks: [
+      {tid:'t20',name:'Sunflower',artist:'Post Malone',color:'#3a3a1a'},
+      {tid:'t26',name:'Rockstar',artist:'Post Malone ft 21 Savage',color:'#3a3a1a'},
+      {tid:'t27',name:'Circles',artist:'Post Malone',color:'#3a3a1a'},
+      {tid:'t28',name:'Bad Guy',artist:'Billie Eilish',color:'#1a2a3a'},
+      {tid:'t20',name:'Sunflower',artist:'Post Malone',color:'#3a3a1a'},
+    ]},
+    { id: 'p10', name: 'Focus Mode',   color: '#2a2a3a', tracks: [
+      {tid:'t03',name:'Heat Waves',artist:'Glass Animals',color:'#1a2a3a'},
+      {tid:'t29',name:'Shivers',artist:'Ed Sheeran',color:'#2a2a3a'},
+      {tid:'t14',name:'Telepatia',artist:'Kali Uchis',color:'#1a3a1a'},
+      {tid:'t16',name:'Watermelon Sugar',artist:'Harry Styles',color:'#2a1a3a'},
+      {tid:'t29',name:'Shivers',artist:'Ed Sheeran',color:'#2a2a3a'},
+    ]},
+  ];
+
+  // duplicate = same track ID appearing more than once in the same playlist
+  function computeDuplicates() {
+    const results = [];
+    playlistsData.forEach(p => {
+      const counts = {};
+      p.tracks.forEach(t => { counts[t.tid] = (counts[t.tid] || { track: t, n: 0 }); counts[t.tid].n++; });
+      Object.values(counts).filter(e => e.n > 1).forEach(e => {
+        results.push({ name: e.track.name, artist: e.track.artist, color: e.track.color, inPlaylist: p.name, copies: e.n });
+      });
+    });
+    return results;
+  }
+
   // ── STATE ────────────────────────────────────────────────────
   const state = {
     page: 'tracks',
@@ -1143,6 +1262,8 @@
     recentSubtab: 'all',
     entries: { tracks: 20, artists: 20 },
     selectedArtists: new Set(),
+    selectedPlaylistId: null,
+    removedDupes: new Set(),
   };
 
   // ── FUTURE DATA ──────────────────────────────────────────────
@@ -1236,10 +1357,10 @@
       <div class="track-info">
         <div class="track-name">${t.name}</div>
         <div class="track-artist">${t.artist}</div>
-        <div class="bar-wrap"><div class="bar-bg"><div class="bar-fill ${isListened?'bar-amber':'bar-green'}" style="width:${t.pct}%"></div></div></div>
+        <div class="bar-wrap"><div class="bar-bg"><div class="bar-fill bar-green" style="width:${t.pct}%"></div></div></div>
       </div>
       <div class="track-right">
-        <div class="play-count ${isListened?'amber':''}">${t.plays}</div>
+        <div class="play-count">${t.plays}</div>
         <div class="plays-label">plays</div>
         ${isListened ? '<div class="badge-alltime">top</div>' : `<div class="time-ago">${t.ago}</div>`}
       </div>
@@ -1360,6 +1481,61 @@
       </div>`).join('') : '<div style="font-size:12px;color:#444;padding:12px 0;">No new releases in this period.</div>';
   }
 
+  function renderSelectPlaylist() {
+    const el = document.getElementById('playlist-select-list');
+    if (!el) return;
+    el.innerHTML = playlistsData.map(p => `
+      <div class="playlist-row ${state.selectedPlaylistId === p.id ? 'selected' : ''}" onclick="selectPlaylist('${p.id}')">
+        <div class="playlist-icon" style="background:${p.color}"></div>
+        <div class="playlist-name">${p.name}</div>
+        <div class="playlist-count">${p.tracks.length} tracks</div>
+        ${state.selectedPlaylistId === p.id ? '<div class="badge-following">selected</div>' : ''}
+      </div>`).join('');
+  }
+
+  function selectPlaylist(id) {
+    state.selectedPlaylistId = state.selectedPlaylistId === id ? null : id;
+    renderSelectPlaylist();
+    renderDuplicates();
+  }
+
+  function renderDuplicates() {
+    const label = document.getElementById('dupes-header-label');
+    const selected = playlistsData.find(p => p.id === state.selectedPlaylistId);
+    if (label) label.textContent = 'Duplicates in: ' + (selected ? selected.name : 'All playlists');
+    const list = document.getElementById('dupes-list');
+    if (!list) return;
+    const dupes = computeDuplicates().filter(d => {
+      if (state.removedDupes.has(d.inPlaylist + '|' + d.name)) return false;
+      if (!selected) return true;
+      return d.inPlaylist === selected.name;
+    });
+    list.innerHTML = dupes.length ? dupes.map(d => `
+      <div class="track-row">
+        <div class="track-thumb" style="background:${d.color}"></div>
+        <div class="track-info">
+          <div class="track-name">${d.name}</div>
+          <div class="track-artist">${d.artist}</div>
+          <div class="dupe-in">Added ${d.copies}× in "${d.inPlaylist}"</div>
+        </div>
+        <button class="tool-btn red" style="padding:3px 12px;font-size:11px;" onclick="removeDupe('${d.inPlaylist}|${d.name}')">Remove</button>
+      </div>`).join('')
+      : '<div style="font-size:12px;color:#444;padding:12px 0;">No duplicates found.</div>';
+  }
+
+  function removeDupe(key) {
+    state.removedDupes.add(key);
+    renderDuplicates();
+  }
+
+  function removeAllDupes() {
+    const selected = playlistsData.find(p => p.id === state.selectedPlaylistId);
+    computeDuplicates()
+      .filter(d => !selected || d.inPlaylist === selected.name)
+      .forEach(d => state.removedDupes.add(d.inPlaylist + '|' + d.name));
+    renderDuplicates();
+  }
+
   function render() {
 
     if (!recentTracks || !recentTracks.length) return;
@@ -1377,6 +1553,8 @@
       renderStats();
       renderFollowManager();
       renderNewSongs();
+      renderSelectPlaylist();
+      renderDuplicates();
       renderFuture();
     } catch(e) { console.error('render error:', e); }
   }
