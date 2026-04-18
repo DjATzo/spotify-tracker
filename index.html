@@ -6,6 +6,7 @@
 <title>Playcount</title>
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#1DB954" />
+<meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Playcount" />
@@ -641,7 +642,7 @@
   // Replace with your Spotify app's Client ID from developer.spotify.com
   const SPOTIFY_CLIENT_ID = '4cced736076e415083ac29a7608277af';
   const SPOTIFY_REDIRECT_URI = window.location.origin + window.location.pathname;
-  const SPOTIFY_SCOPES = 'playlist-modify-public playlist-modify-private user-follow-read user-read-private';
+  const SPOTIFY_SCOPES = 'playlist-modify-public playlist-modify-private user-follow-read user-read-private user-read-recently-played user-top-read user-library-read';
 
   // ── FIREBASE REALTIME DATABASE ───────────────────────────────
   const _fbApp = firebase.initializeApp({
@@ -778,6 +779,104 @@
     renderNewSongs();
   }
 
+  // ── USER DATA FETCH ──────────────────────────────────────────
+  function timeAgo(isoString) {
+    const diff = Date.now() - new Date(isoString);
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return m + ' min ago';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + ' hr ago';
+    const d = Math.floor(h / 24);
+    if (d === 1) return 'yesterday';
+    if (d < 7) return d + ' days ago';
+    return Math.floor(d / 7) + ' week' + (Math.floor(d/7)>1?'s':'') + ' ago';
+  }
+
+  async function fetchUserData() {
+    const token = await getValidToken();
+    if (!token) return;
+
+    const [recent, tShort, tMedium, tLong, aShort, aMedium, aLong] = await Promise.all([
+      spotifyApi('GET', '/me/player/recently-played?limit=50', null, token).catch(() => null),
+      spotifyApi('GET', '/me/top/tracks?limit=50&time_range=short_term', null, token).catch(() => null),
+      spotifyApi('GET', '/me/top/tracks?limit=50&time_range=medium_term', null, token).catch(() => null),
+      spotifyApi('GET', '/me/top/tracks?limit=50&time_range=long_term', null, token).catch(() => null),
+      spotifyApi('GET', '/me/top/artists?limit=50&time_range=short_term', null, token).catch(() => null),
+      spotifyApi('GET', '/me/top/artists?limit=50&time_range=medium_term', null, token).catch(() => null),
+      spotifyApi('GET', '/me/top/artists?limit=50&time_range=long_term', null, token).catch(() => null),
+    ]);
+
+    if (recent?.items?.length) {
+      recentTracks.length = 0;
+      recent.items.forEach((item, i) => {
+        recentTracks.push({
+          name: item.track.name,
+          artist: item.track.artists.map(a => a.name).join(', '),
+          plays: recent.items.length - i,
+          ago: timeAgo(item.played_at),
+          pct: Math.round(((recent.items.length - i) / recent.items.length) * 100),
+          imageUrl: item.track.album.images?.[1]?.url || null,
+          color: '#1a1a1a',
+          liked: false,
+          id: item.track.id,
+        });
+      });
+    }
+
+    function mapTracks(data) {
+      if (!data?.items?.length) return [];
+      return data.items.map((t, i) => ({
+        name: t.name,
+        artist: t.artists.map(a => a.name).join(', '),
+        plays: data.items.length - i,
+        pct: Math.round(((data.items.length - i) / data.items.length) * 100),
+        imageUrl: t.album.images?.[1]?.url || null,
+        color: '#1a1a1a',
+        id: t.id,
+      }));
+    }
+
+    function mapArtists(data) {
+      if (!data?.items?.length) return [];
+      return data.items.map((a, i) => ({
+        name: a.name,
+        plays: data.items.length - i,
+        imageUrl: a.images?.[1]?.url || null,
+        color: '#1a1a1a',
+        id: a.id,
+      }));
+    }
+
+    listenedData['7days']   = mapTracks(tShort);
+    listenedData['30days']  = mapTracks(tMedium);
+    listenedData['year']    = mapTracks(tLong);
+    listenedData['alltime'] = mapTracks(tLong);
+
+    topArtistsData.week    = mapArtists(aShort);
+    topArtistsData.month   = mapArtists(aMedium);
+    topArtistsData.year    = mapArtists(aLong);
+    topArtistsData.alltime = mapArtists(aLong);
+
+    const followed = [];
+    let furl = '/me/following?type=artist&limit=50';
+    while (furl) {
+      const d = await spotifyApi('GET', furl, null, token).catch(() => null);
+      if (!d) break;
+      followed.push(...d.artists.items.map(a => ({
+        name: a.name,
+        followedAgo: '',
+        imageUrl: a.images?.[1]?.url || null,
+        color: '#1a1a1a',
+      })));
+      furl = d.artists.next ? d.artists.next.replace('https://api.spotify.com/v1', '') : null;
+    }
+    followedArtists.length = 0;
+    followedArtists.push(...followed);
+
+    render();
+  }
+
   // ── SPOTIFY PKCE OAUTH ───────────────────────────────────────
   function randomBytes(len) {
     return crypto.getRandomValues(new Uint8Array(len));
@@ -876,7 +975,7 @@
         await nsSpotifyPush();
       } else {
         localStorage.removeItem('sp_login_pending');
-        showMainApp();
+        showMainApp(true);
       }
     } catch(e) {
       setNsPushStatus('Auth failed: ' + e.message, true);
@@ -1513,7 +1612,7 @@
     if (!t) return '';
     return `<div class="track-row">
       <div class="track-num">${i+1}</div>
-      <div class="track-thumb" style="background:${t.color}"></div>
+      ${t.imageUrl ? `<img class="track-thumb" src="${t.imageUrl}" style="object-fit:cover;" />` : `<div class="track-thumb" style="background:${t.color}"></div>`}
       <div class="track-info">
         <div class="track-name">${t.name}</div>
         <div class="track-artist">${t.artist}</div>
@@ -1530,7 +1629,7 @@
   function renderArtistRow(a) {
     const likedCount = getLikedCountForArtist(a.name);
     return `<div class="artist-row">
-      <div class="artist-thumb" style="background:${a.color}"></div>
+      ${a.imageUrl ? `<img class="artist-thumb" src="${a.imageUrl}" style="object-fit:cover;" />` : `<div class="artist-thumb" style="background:${a.color}"></div>`}
       <div class="artist-info">
         <div class="artist-name">${a.name}</div>
         ${a.followedAgo ? `<div class="artist-sub">${a.followedAgo}</div>` : ''}
@@ -1966,11 +2065,16 @@
     document.getElementById('main-app').style.display = 'none';
   }
 
-  function showMainApp() {
+  function showMainApp(goToNewSongs) {
     document.getElementById('login-page').style.display = 'none';
     document.getElementById('main-app').style.display = 'block';
     render();
-    initFromHash();
+    if (goToNewSongs) {
+      goTo('tools', 'new-songs');
+    } else {
+      initFromHash();
+    }
+    fetchUserData();
   }
 
   async function spotifyLoginApp() {
