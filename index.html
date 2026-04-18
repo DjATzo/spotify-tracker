@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Playcount</title>
 <style>
+  :root { --accent: #1DB954; --accent-rgb: 29,185,84; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #0a0a0a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
   .app { max-width: 1200px; margin: 0 auto; }
@@ -12,7 +13,7 @@
   /* NAVBAR */
   .navbar { display: flex; align-items: center; padding: 0 24px; height: 52px; gap: 24px; border-bottom: 0.5px solid rgba(255,255,255,0.08); background: #0d0d0d; position: sticky; top: 0; z-index: 100; }
   .logo { font-size: 18px; font-weight: 500; letter-spacing: -0.02em; flex-shrink: 0; }
-  .logo span { color: #1DB954; }
+  .logo span { color: var(--accent); }
   .logo em { font-size: 11px; font-weight: 400; color: #F97316; margin-left: 6px; font-style: normal; }
 
   /* NAV LINKS */
@@ -20,7 +21,7 @@
   .nav-item { position: relative; }
   .nav-item-label { font-size: 13px; padding: 0 12px; height: 52px; display: flex; align-items: center; color: #666; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; white-space: nowrap; user-select: none; }
   .nav-item-label:hover { color: #fff; }
-  .nav-item-label.active { color: #fff; border-bottom: 2px solid #1DB954; }
+  .nav-item-label.active { color: #fff; border-bottom: 2px solid var(--accent); }
 
   /* DROPDOWN */
   .nav-dropdown { display: none; position: absolute; top: calc(100% + 1px); left: 0; background: #161616; border: 0.5px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px; min-width: 190px; z-index: 200; }
@@ -28,12 +29,17 @@
   .nav-dropdown.dd-open { display: block !important; }
   .drop-item { display: block; font-size: 13px; padding: 8px 12px; color: #777; border-radius: 6px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
   .drop-item:hover { background: #222; color: #fff; }
-  .drop-item.active { color: #1DB954; }
+  .drop-item.active { color: var(--accent); }
 
   .nav-right { display: flex; align-items: center; gap: 12px; margin-left: auto; flex-shrink: 0; }
-  .avatar { width: 30px; height: 30px; border-radius: 50%; background: #1DB954; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #000; }
-  .logout-btn { font-size: 12px; color: #666; background: none; border: 0.5px solid rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px; cursor: pointer; }
-  .logout-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #000; cursor: pointer; transition: transform 0.15s; }
+  .profile-wrap:hover .avatar { transform: scale(1.12); }
+  .profile-wrap { position: relative; }
+  .profile-dropdown { display: none; position: absolute; top: calc(100% + 8px); right: 0; background: #161616; border: 0.5px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px; min-width: 140px; z-index: 200; }
+  .profile-wrap.open .profile-dropdown { display: block; }
+  .profile-drop-item { font-size: 13px; padding: 8px 12px; color: #777; border-radius: 6px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .profile-drop-item:hover { background: #222; color: #fff; }
+  .profile-drop-item.danger:hover { color: #f87171; }
 
   /* PAGES */
   .page { display: none; }
@@ -44,17 +50,23 @@
   .pills { display: flex; gap: 6px; flex-wrap: wrap; }
   .pill { font-size: 13px; padding: 6px 14px; border-radius: 20px; background: #1a1a1a; color: #666; border: 0.5px solid rgba(255,255,255,0.08); cursor: pointer; transition: all 0.15s; }
   .pill:hover { color: #aaa; }
-  .pill.active { background: #1DB954; color: #000; font-weight: 500; border-color: transparent; }
+  .pill.active { background: var(--accent); color: #000; font-weight: 500; border-color: transparent; }
 
   .entries-wrap { display: flex; align-items: center; gap: 8px; }
   .entries-label { font-size: 12px; color: #666; }
-  .entries-select { background: #111; border: none; outline: none; color: #1DB954; padding: 3px 4px; font-size: 11px; cursor: pointer; }
-  .entries-select:focus { background: transparent; outline: none; }
+  .cselect { position: relative; display: inline-block; }
+  .cselect-val { font-size: 11px; color: var(--accent); cursor: pointer; padding: 3px 4px; user-select: none; }
+  .cselect-list { display: none; position: absolute; right: 0; top: calc(100% + 4px); background: #161616; border: 0.5px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 2px; z-index: 400; min-width: 60px; }
+  .cselect.open .cselect-list { display: block; }
+  .cselect-opt { font-size: 12px; color: #777; padding: 3px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+  .cselect-opt:hover { background: #222; color: #fff; }
+  .cselect-opt.sel { color: var(--accent); }
+  .cselect-val-lg { font-size: 12px; color: var(--accent); cursor: pointer; padding: 4px 8px; background: #1a1a1a; border: 0.5px solid rgba(255,255,255,0.1); border-radius: 6px; user-select: none; }
 
   /* SUBTABS */
   .subtabs { display: flex; gap: 4px; padding: 0 24px 10px; flex-wrap: wrap; }
   .subtab { font-size: 11px; padding: 4px 12px; border-radius: 6px; background: #1a1a1a; color: #666; border: 0.5px solid rgba(255,255,255,0.07); cursor: pointer; transition: all 0.15s; }
-  .subtab.active { background: rgba(29,185,84,0.18); color: #1DB954; border-color: rgba(29,185,84,0.3); }
+  .subtab.active { background: rgba(var(--accent-rgb),0.18); color: var(--accent); border-color: rgba(var(--accent-rgb),0.3); }
 
   /* TAB CONTENT */
   .tab-content { display: none; }
@@ -72,10 +84,10 @@
   .bar-wrap { margin-top: 5px; }
   .bar-bg { height: 2px; background: rgba(255,255,255,0.06); border-radius: 1px; overflow: hidden; }
   .bar-fill { height: 100%; border-radius: 1px; }
-  .bar-green { background: #1DB954; }
+  .bar-green { background: var(--accent); }
   .bar-amber { background: #F59E0B; }
   .track-right { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; min-width: 52px; }
-  .play-count { font-size: 22px; font-weight: 500; line-height: 1; color: #1DB954; }
+  .play-count { font-size: 22px; font-weight: 500; line-height: 1; color: var(--accent); }
   .play-count.amber { color: #F59E0B; }
   .plays-label { font-size: 8px; color: #444; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 1px; }
   .time-ago { font-size: 10px; color: #444; margin-top: 2px; }
@@ -89,7 +101,7 @@
   .artist-info { flex: 1; min-width: 0; }
   .artist-name { font-size: 13px; font-weight: 500; }
   .artist-sub { font-size: 11px; color: #555; margin-top: 1px; }
-  .badge-following { font-size: 10px; padding: 2px 9px; border-radius: 20px; background: rgba(29,185,84,0.15); color: #1DB954; font-weight: 500; flex-shrink: 0; }
+  .badge-following { font-size: 10px; padding: 2px 9px; border-radius: 20px; background: rgba(var(--accent-rgb),0.15); color: var(--accent); font-weight: 500; flex-shrink: 0; }
   .letter-divider { font-size: 11px; color: #444; font-weight: 500; padding: 8px 12px 4px; letter-spacing: 0.06em; }
   .liked-count { font-size: 10px; color: #444; flex-shrink: 0; margin-right: 8px; }
 
@@ -104,20 +116,20 @@
   .stats-section-title { font-size: 12px; color: #555; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
   .chart-bars { display: flex; align-items: flex-end; gap: 4px; height: 80px; margin-bottom: 8px; }
   .chart-bar-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
-  .chart-bar { width: 100%; background: #1DB954; border-radius: 3px 3px 0 0; min-height: 2px; transition: height 0.3s; }
+  .chart-bar { width: 100%; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 2px; transition: height 0.3s; }
   .chart-bar.dim { background: #1a3a2a; }
   .chart-label { font-size: 9px; color: #444; }
   .genre-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
   .genre-tag { font-size: 12px; padding: 4px 12px; border-radius: 20px; background: #1a1a1a; color: #aaa; border: 0.5px solid rgba(255,255,255,0.08); }
-  .genre-tag.top { background: rgba(29,185,84,0.15); color: #1DB954; border-color: rgba(29,185,84,0.2); }
+  .genre-tag.top { background: rgba(var(--accent-rgb),0.15); color: var(--accent); border-color: rgba(var(--accent-rgb),0.2); }
   .stat-card { background: #111; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
   .stat-card-title { font-size: 11px; color: #555; margin-bottom: 6px; }
-  .stat-card-value { font-size: 28px; font-weight: 500; color: #1DB954; line-height: 1; }
+  .stat-card-value { font-size: 28px; font-weight: 500; color: var(--accent); line-height: 1; }
   .stat-card-sub { font-size: 11px; color: #555; margin-top: 4px; }
   .stat-cards-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
   .score-bar-wrap { margin-top: 8px; }
   .score-bar-bg { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
-  .score-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #1DB954, #F59E0B); }
+  .score-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), #F59E0B); }
   .score-labels { display: flex; justify-content: space-between; margin-top: 4px; }
   .score-label { font-size: 10px; color: #444; }
 
@@ -127,16 +139,16 @@
   .tools-actions { display: flex; gap: 8px; }
   .tool-btn { font-size: 12px; padding: 5px 14px; border-radius: 20px; cursor: pointer; border: 0.5px solid rgba(255,255,255,0.1); background: #1a1a1a; color: #aaa; transition: all 0.15s; }
   .tool-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
-  .tool-btn.green { background: #1DB954; color: #000; border-color: transparent; font-weight: 500; }
+  .tool-btn.green { background: var(--accent); color: #000; border-color: transparent; font-weight: 500; }
   .tool-btn.green:hover { background: #17a349; }
   .tool-btn.red { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.2); }
   .tool-btn.red:hover { background: rgba(239,68,68,0.25); }
   .tool-artist-row { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 6px; background: #111; margin-bottom: 3px; }
   .tool-artist-row:hover { background: #161616; }
   .tool-check { width: 16px; height: 16px; border-radius: 4px; border: 0.5px solid rgba(255,255,255,0.2); background: transparent; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; }
-  .tool-check.checked { background: #1DB954; border-color: #1DB954; color: #000; }
+  .tool-check.checked { background: var(--accent); border-color: var(--accent); color: #000; }
   .follow-btn { font-size: 11px; padding: 3px 12px; border-radius: 20px; cursor: pointer; border: 0.5px solid rgba(255,255,255,0.1); background: transparent; color: #aaa; transition: all 0.15s; flex-shrink: 0; }
-  .follow-btn.following { background: rgba(29,185,84,0.15); color: #1DB954; border-color: rgba(29,185,84,0.2); }
+  .follow-btn.following { background: rgba(var(--accent-rgb),0.15); color: var(--accent); border-color: rgba(var(--accent-rgb),0.2); }
   .follow-btn:hover { color: #fff; }
   .new-songs-note { font-size: 12px; color: #555; padding: 20px 0 10px; }
   .new-songs-list { display: flex; flex-direction: column; gap: 3px; }
@@ -146,13 +158,47 @@
   .new-song-info { flex: 1; min-width: 0; }
   .new-song-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .new-song-artist { font-size: 11px; color: #555; margin-top: 1px; }
-  .new-badge { font-size: 9px; padding: 1px 7px; border-radius: 20px; background: rgba(29,185,84,0.15); color: #1DB954; font-weight: 500; flex-shrink: 0; }
+  .new-badge { font-size: 9px; padding: 1px 7px; border-radius: 20px; background: rgba(var(--accent-rgb),0.15); color: var(--accent); font-weight: 500; flex-shrink: 0; }
+
+  /* SETTINGS MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 500; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #111; border: 0.5px solid rgba(255,255,255,0.1); border-radius: 12px; width: 100%; max-width: 420px; max-height: 80vh; overflow-y: auto; padding: 20px 24px 24px; position: relative; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .modal-title { font-size: 15px; font-weight: 500; }
+  .modal-close { font-size: 18px; color: #555; cursor: pointer; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+  .modal-close:hover { color: #fff; background: #1a1a1a; }
+  .settings-section { margin-bottom: 20px; }
+  .settings-section-title { font-size: 10px; color: #444; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 0.5px solid rgba(255,255,255,0.05); gap: 16px; }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-label { font-size: 13px; }
+  .settings-sub { font-size: 11px; color: #555; margin-top: 2px; }
+  .settings-badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; background: rgba(249,115,22,0.15); color: #F97316; }
+  .toggle { width: 36px; height: 20px; border-radius: 10px; background: #2a2a2a; border: 0.5px solid rgba(255,255,255,0.1); cursor: pointer; position: relative; flex-shrink: 0; transition: background 0.2s; }
+  .toggle.on { background: var(--accent); border-color: var(--accent); }
+  .toggle-knob { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left 0.2s; }
+  .toggle.on .toggle-knob { left: 18px; }
+  .color-swatches { display: flex; gap: 8px; }
+  .swatch { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s; }
+  .swatch:hover { transform: scale(1.15); }
+  .swatch.active { border-color: #fff; }
+
+  /* FUTURE */
+  .future-wrap { padding: 0 24px 24px; }
+  .future-section-title { font-size: 11px; color: #444; text-transform: uppercase; letter-spacing: 0.06em; padding: 14px 0 6px; }
+  .future-item { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 6px; background: #111; margin-bottom: 3px; cursor: pointer; transition: background 0.15s; }
+  .future-item:hover { background: #161616; }
+  .future-item-text { font-size: 13px; flex: 1; }
+  .future-item-text.done { color: #444; text-decoration: line-through; }
+  .future-check { width: 16px; height: 16px; border-radius: 4px; border: 0.5px solid rgba(255,255,255,0.2); background: transparent; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+  .future-check.checked { background: var(--accent); border-color: var(--accent); color: #000; }
 
   /* MOBILE */
   @media (max-width: 600px) {
     .navbar { padding: 0 16px; gap: 8px; }
     .logo { font-size: 15px; }
-    .logout-btn { display: none; }
+
     .nav-item-label { padding: 0 8px; font-size: 12px; }
     .section-header { padding: 12px 16px 8px; flex-direction: column; align-items: flex-start; }
     .entries-wrap { align-self: flex-end; }
@@ -172,7 +218,7 @@
 
   <!-- NAVBAR -->
   <nav class="navbar">
-    <div class="logo">play<span>count</span><em>v6</em></div>
+    <div class="logo">play<span>count</span><em>v7</em></div>
     <div class="nav-links">
       <div class="nav-item">
         <div class="nav-item-label active" id="nav-tracks" onclick="goTo('tracks','recent')" ontouchstart="toggleDropdown('dd-tracks',event)">Tracks</div>
@@ -204,10 +250,22 @@
           <div class="drop-item" onclick="goTo('tools','new-songs')">New songs</div>
         </div>
       </div>
+      <div class="nav-item">
+        <div class="nav-item-label" id="nav-future" onclick="goTo('future','todo')" ontouchstart="toggleDropdown('dd-future',event)">Future</div>
+        <div class="nav-dropdown" id="dd-future">
+          <div class="drop-item" onclick="goTo('future','todo')">To do</div>
+          <div class="drop-item" onclick="goTo('future','done')">Have done</div>
+        </div>
+      </div>
     </div>
     <div class="nav-right">
-      <div class="avatar">JD</div>
-      <button class="logout-btn">Log out</button>
+      <div class="profile-wrap" id="profile-wrap" onclick="toggleProfileMenu(event)">
+        <div class="avatar">JD</div>
+        <div class="profile-dropdown">
+          <div class="profile-drop-item" onclick="openSettings()">Settings</div>
+          <div class="profile-drop-item danger">Log out</div>
+        </div>
+      </div>
     </div>
   </nav>
 
@@ -220,10 +278,13 @@
       </div>
       <div class="entries-wrap">
         <span class="entries-label">Entries:</span>
-        <select class="entries-select" onchange="setEntries('tracks', this.value)">
-          <option value="20">20</option>
-          <option value="50">50</option>
-        </select>
+        <div class="cselect" id="cs-tracks">
+          <div class="cselect-val" onclick="toggleCSelect('cs-tracks')">20</div>
+          <div class="cselect-list">
+            <div class="cselect-opt sel" onclick="pickCSelect('cs-tracks','20',function(v){setEntries('tracks',v)})">20</div>
+            <div class="cselect-opt" onclick="pickCSelect('cs-tracks','50',function(v){setEntries('tracks',v)})">50</div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="tab-content active" id="tracks-recent">
@@ -255,10 +316,13 @@
       </div>
       <div class="entries-wrap" id="artists-entries-wrap">
         <span class="entries-label">Entries:</span>
-        <select class="entries-select" onchange="setEntries('artists', this.value)">
-          <option value="20">20</option>
-          <option value="50">50</option>
-        </select>
+        <div class="cselect" id="cs-artists">
+          <div class="cselect-val" onclick="toggleCSelect('cs-artists')">20</div>
+          <div class="cselect-list">
+            <div class="cselect-opt sel" onclick="pickCSelect('cs-artists','20',function(v){setEntries('artists',v)})">20</div>
+            <div class="cselect-opt" onclick="pickCSelect('cs-artists','50',function(v){setEntries('artists',v)})">50</div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="tab-content active" id="artists-top">
@@ -381,11 +445,15 @@
           </div>
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
             <span style="font-size:12px;color:#666;flex-shrink:0;">Show songs from last</span>
-            <select id="ns-duration" onchange="renderNewSongs()" style="background:#1a1a1a;border:0.5px solid rgba(255,255,255,0.1);border-radius:6px;padding:5px 10px;font-size:12px;color:#1DB954;outline:none;cursor:pointer;">
-              <option value="7" selected>1 week</option>
-              <option value="14">2 weeks</option>
-              <option value="30">1 month</option>
-            </select>
+            <input type="hidden" id="ns-duration" value="7" />
+            <div class="cselect" id="cs-nsduration">
+              <div class="cselect-val cselect-val-lg" onclick="toggleCSelect('cs-nsduration')">1 week</div>
+              <div class="cselect-list">
+                <div class="cselect-opt sel" onclick="pickCSelect('cs-nsduration','1 week',function(){document.getElementById('ns-duration').value=7;renderNewSongs()})">1 week</div>
+                <div class="cselect-opt" onclick="pickCSelect('cs-nsduration','2 weeks',function(){document.getElementById('ns-duration').value=14;renderNewSongs()})">2 weeks</div>
+                <div class="cselect-opt" onclick="pickCSelect('cs-nsduration','1 month',function(){document.getElementById('ns-duration').value=30;renderNewSongs()})">1 month</div>
+              </div>
+            </div>
           </div>
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
             <span style="font-size:12px;color:#666;flex-shrink:0;">Include</span>
@@ -397,6 +465,63 @@
         </div>
         <div class="new-songs-list" id="new-songs-list"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div class="modal-overlay" id="settings-modal" onclick="closeSettingsOnOverlay(event)">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Settings</div>
+        <div class="modal-close" onclick="closeSettings()">✕</div>
+      </div>
+
+      <!-- Language -->
+      <!-- Accent color -->
+      <div class="settings-section">
+        <div class="settings-section-title">Accent color</div>
+        <div class="settings-row">
+          <div class="settings-label">Color</div>
+          <div class="color-swatches">
+            <div class="swatch active" style="background:#1DB954" onclick="setAccent('#1DB954','29,185,84',this)" title="Green"></div>
+            <div class="swatch" style="background:#38BDF8" onclick="setAccent('#38BDF8','56,189,248',this)" title="Light blue"></div>
+            <div class="swatch" style="background:#EAB308" onclick="setAccent('#EAB308','234,179,8',this)" title="Yellow"></div>
+            <div class="swatch" style="background:#A855F7" onclick="setAccent('#A855F7','168,85,247',this)" title="Purple"></div>
+            <div class="swatch" style="background:#EC4899" onclick="setAccent('#EC4899','236,72,153',this)" title="Pink"></div>
+            <div class="swatch" style="background:#E5E7EB" onclick="setAccent('#E5E7EB','229,231,235',this)" title="White"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Language</div>
+        <div class="settings-row">
+          <div class="settings-label">Language</div>
+          <div class="cselect" id="cs-lang">
+            <div class="cselect-val cselect-val-lg" onclick="toggleCSelect('cs-lang')">English</div>
+            <div class="cselect-list">
+              <div class="cselect-opt sel" onclick="toggleCSelect('cs-lang')">English</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FUTURE PAGE -->
+  <div class="page" id="page-future">
+    <div class="section-header">
+      <div class="pills">
+        <div class="pill active" id="pill-future-todo" onclick="setTab('future','todo')">To do</div>
+        <div class="pill" id="pill-future-done" onclick="setTab('future','done')">Have done</div>
+      </div>
+    </div>
+    <div class="tab-content active" id="future-todo">
+      <div class="future-wrap" id="future-todo-list"></div>
+    </div>
+    <div class="tab-content" id="future-done">
+      <div class="future-wrap" id="future-done-list"></div>
     </div>
   </div>
 
@@ -591,12 +716,94 @@
     artistsTab: 'top',
     statsTab: 'activity',
     toolsTab: 'follow-manager',
+    futureTab: 'todo',
     topSubtab: 'week',
     listenedSubtab: '7days',
     recentSubtab: 'all',
     entries: { tracks: 20, artists: 20 },
     selectedArtists: new Set(),
   };
+
+  // ── FUTURE DATA ──────────────────────────────────────────────
+  const futureItems = [
+    { id: 1,  text: 'Real album art',               section: 'Spotify API',       done: false },
+    { id: 2,  text: 'Real artist images',            section: 'Spotify API',       done: false },
+    { id: 3,  text: 'Login with Spotify',            section: 'Spotify API',       done: false },
+    { id: 4,  text: 'Loading skeleton',              section: 'Spotify API',       done: false },
+    { id: 5,  text: 'Real play counts',              section: 'Spotify API',       done: false },
+    { id: 6,  text: 'Energy / mood bars on tracks',  section: 'Track details',     done: false },
+    { id: 7,  text: 'Click track → open Spotify',    section: 'Navigation',        done: false },
+    { id: 8,  text: 'Click artist → open Spotify',   section: 'Navigation',        done: false },
+    { id: 9,  text: 'Play / pause track',            section: 'Playback (Premium)',done: false },
+    { id: 10, text: 'Skip next / previous',          section: 'Playback (Premium)',done: false },
+    { id: 11, text: 'Add to queue',                  section: 'Playback (Premium)',done: false },
+    { id: 12, text: 'Create playlist from top tracks',section: 'Playlists',        done: false },
+    { id: 13, text: 'Add tracks to playlist',        section: 'Playlists',        done: false },
+    { id: 14, text: 'Like / unlike track',           section: 'Library',          done: false },
+    { id: 15, text: 'Follow / unfollow artist',      section: 'Library',          done: false },
+    { id: 16, text: 'Listening heatmap',             section: 'Stats',            done: false },
+    { id: 17, text: 'Export as image',               section: 'Stats',            done: false },
+    { id: 18, text: 'Mood over time chart',          section: 'Stats',            done: false },
+    { id: 19, text: 'Stats summary card',            section: 'Stats',            done: false },
+    { id: 20, text: 'New song notifications',        section: 'Tools',            done: false },
+    { id: 21, text: 'Remove if listened',            section: 'Tools',            done: false },
+    { id: 22, text: 'Remove if liked / disliked',    section: 'Tools',            done: false },
+    { id: 23, text: 'New songs → auto-sync Spotify', section: 'Tier 2',           done: false },
+    { id: 24, text: 'Auto-remove after duration',    section: 'Tier 2',           done: false },
+    { id: 25, text: 'Auto-remove if listened',       section: 'Tier 2',           done: false },
+    { id: 26, text: 'Auto-remove if liked/disliked', section: 'Tier 2',           done: false },
+    { id: 27, text: 'Search/filter on Tracks',       section: 'Other',            done: false },
+    { id: 28, text: 'Track detail page',             section: 'Other',            done: false },
+    { id: 29, text: 'Artist detail page',            section: 'Other',            done: false },
+    { id: 30, text: 'Recently played subtab filters',section: 'Other',            done: false },
+    { id: 31, text: 'Fix blank page on first load',  section: 'Bugs',             done: false },
+    { id: 32, text: 'Split into separate files',     section: 'End of project',   done: false },
+  ];
+
+  (function loadFutureState() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('futureItems') || '{}');
+      futureItems.forEach(item => { if (saved[item.id] !== undefined) item.done = saved[item.id]; });
+    } catch(e) {}
+  })();
+
+  function saveFutureState() {
+    const map = {};
+    futureItems.forEach(item => { map[item.id] = item.done; });
+    localStorage.setItem('futureItems', JSON.stringify(map));
+  }
+
+  function toggleFutureItem(id) {
+    const item = futureItems.find(f => f.id === id);
+    if (!item) return;
+    item.done = !item.done;
+    saveFutureState();
+    renderFuture();
+  }
+
+  function renderFuture() {
+    const todo = futureItems.filter(f => !f.done);
+    const done = futureItems.filter(f => f.done);
+
+    function buildList(items) {
+      if (!items.length) return '<div style="font-size:12px;color:#444;padding:12px 0;">Nothing here.</div>';
+      let html = '', lastSection = '';
+      items.forEach(item => {
+        if (item.section !== lastSection) {
+          html += `<div class="future-section-title">${item.section}</div>`;
+          lastSection = item.section;
+        }
+        html += `<div class="future-item" onclick="toggleFutureItem(${item.id})">
+          <div class="future-check ${item.done ? 'checked' : ''}">${item.done ? '✓' : ''}</div>
+          <div class="future-item-text ${item.done ? 'done' : ''}">${item.text}</div>
+        </div>`;
+      });
+      return html;
+    }
+
+    document.getElementById('future-todo-list').innerHTML = buildList(todo);
+    document.getElementById('future-done-list').innerHTML = buildList(done);
+  }
 
   // ── RENDER ───────────────────────────────────────────────────
   function renderTrackRow(t, i, isListened) {
@@ -748,6 +955,7 @@
       renderStats();
       renderFollowManager();
       renderNewSongs();
+      renderFuture();
     } catch(e) { console.error('render error:', e); }
   }
 
@@ -792,6 +1000,63 @@
   }
 
   // ── NAVIGATION ───────────────────────────────────────────────
+  // ── CUSTOM SELECT ────────────────────────────────────────────
+  function toggleCSelect(id) {
+    const el = document.getElementById(id);
+    const isOpen = el.classList.contains('open');
+    document.querySelectorAll('.cselect.open').forEach(s => s.classList.remove('open'));
+    if (!isOpen) el.classList.add('open');
+  }
+
+  function pickCSelect(id, label, cb) {
+    const el = document.getElementById(id);
+    el.querySelector('.cselect-val').textContent = label;
+    el.querySelectorAll('.cselect-opt').forEach(o => o.classList.toggle('sel', o.textContent === label));
+    el.classList.remove('open');
+    if (cb) cb(label);
+  }
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.cselect')) {
+      document.querySelectorAll('.cselect.open').forEach(s => s.classList.remove('open'));
+    }
+  });
+
+  // ── SETTINGS ─────────────────────────────────────────────────
+  function openSettings() {
+    document.getElementById('settings-modal').classList.add('open');
+    document.getElementById('profile-wrap').classList.remove('open');
+  }
+
+  function closeSettings() {
+    document.getElementById('settings-modal').classList.remove('open');
+  }
+
+  function closeSettingsOnOverlay(e) {
+    if (e.target === document.getElementById('settings-modal')) closeSettings();
+  }
+
+  function toggleSetting(key) {
+    const el = document.getElementById('toggle-' + key);
+    el.classList.toggle('on');
+  }
+
+  function setAccent(color, rgb, el) {
+    document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    document.documentElement.style.setProperty('--accent', color);
+    document.documentElement.style.setProperty('--accent-rgb', rgb);
+  }
+
+  function toggleProfileMenu(e) {
+    e.stopPropagation();
+    document.getElementById('profile-wrap').classList.toggle('open');
+  }
+
+  document.addEventListener('click', function() {
+    document.getElementById('profile-wrap').classList.remove('open');
+  });
+
   function hideDropdowns() {
     document.querySelectorAll('.nav-dropdown').forEach(d => {
       d.style.display = 'none';
@@ -800,11 +1065,11 @@
   }
 
   function goTo(page, tab) {
-    const currentTab = page === 'tracks' ? state.tracksTab : page === 'artists' ? state.artistsTab : page === 'stats' ? state.statsTab : state.toolsTab;
+    const currentTab = page === 'tracks' ? state.tracksTab : page === 'artists' ? state.artistsTab : page === 'stats' ? state.statsTab : page === 'future' ? state.futureTab : state.toolsTab;
     if (state.page === page && currentTab === tab) { hideDropdowns(); return; }
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + page).classList.add('active');
-    ['tracks','artists','stats','tools'].forEach(p => document.getElementById('nav-' + p).classList.remove('active'));
+    ['tracks','artists','stats','tools','future'].forEach(p => document.getElementById('nav-' + p).classList.remove('active'));
     document.getElementById('nav-' + page).classList.add('active');
     state.page = page;
     setTab(page, tab);
@@ -816,6 +1081,7 @@
     if (page === 'tracks') state.tracksTab = tab;
     else if (page === 'artists') state.artistsTab = tab;
     else if (page === 'stats') state.statsTab = tab;
+    else if (page === 'future') state.futureTab = tab;
     else state.toolsTab = tab;
     document.querySelectorAll('#page-' + page + ' .pill').forEach(p => p.classList.remove('active'));
     const pill = document.getElementById('pill-' + page + '-' + tab);
@@ -887,7 +1153,7 @@
   function initFromHash() {
     const hash = window.location.hash.replace('#', '');
     const [page, tab] = hash.split('/');
-    const valid = { tracks: ['recent','listened'], artists: ['top','followed','all'], stats: ['activity','genres','mainstream'], tools: ['follow-manager','new-songs'] };
+    const valid = { tracks: ['recent','listened'], artists: ['top','followed','all'], stats: ['activity','genres','mainstream'], tools: ['follow-manager','new-songs'], future: ['todo','done'] };
     if (page && valid[page]) {
       goTo(page, (tab && valid[page].includes(tab)) ? tab : valid[page][0]);
     } else {
