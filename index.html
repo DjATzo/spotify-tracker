@@ -8,16 +8,17 @@
   :root { --accent: #1DB954; --accent-rgb: 29,185,84; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #0a0a0a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
-  .app { max-width: 1200px; margin: 0 auto; }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
 
   /* NAVBAR */
-  .navbar { display: flex; align-items: center; padding: 0 24px; height: 52px; gap: 24px; border-bottom: 0.5px solid rgba(255,255,255,0.08); background: #0d0d0d; position: sticky; top: 0; z-index: 100; }
+  .navbar { border-bottom: 0.5px solid rgba(255,255,255,0.08); background: #0d0d0d; position: sticky; top: 0; z-index: 100; }
+  .navbar-inner { max-width: 960px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; height: 52px; gap: 24px; }
   .logo { font-size: 18px; font-weight: 500; letter-spacing: -0.02em; flex-shrink: 0; }
   .logo span { color: var(--accent); }
   .logo em { font-size: 11px; font-weight: 400; color: #F97316; margin-left: 6px; font-style: normal; }
 
   /* NAV LINKS */
-  .nav-links { display: flex; align-items: center; flex: 1; }
+  .nav-links { display: flex; align-items: center; flex: 1; justify-content: center; }
   .nav-item { position: relative; }
   .nav-item-label { font-size: 13px; padding: 0 12px; height: 52px; display: flex; align-items: center; color: #666; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s; white-space: nowrap; user-select: none; }
   .nav-item-label:hover { color: #fff; }
@@ -32,6 +33,8 @@
   .drop-item.active { color: var(--accent); }
 
   .nav-right { display: flex; align-items: center; gap: 12px; margin-left: auto; flex-shrink: 0; }
+  #nav-overlay { position: fixed; inset: 52px 0 0 0; background: rgba(0,0,0,0.6); z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  #nav-overlay.visible { opacity: 1; pointer-events: all; }
   .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #000; cursor: pointer; transition: transform 0.15s; }
   .profile-wrap:hover .avatar { transform: scale(1.12); }
   .profile-wrap { position: relative; }
@@ -42,7 +45,7 @@
   .profile-drop-item.danger:hover { color: #f87171; }
 
   /* PAGES */
-  .page { display: none; }
+  .page { display: none; max-width: 960px; margin: 0 auto; }
   .page.active { display: block; }
 
   /* SECTION HEADER */
@@ -212,7 +215,7 @@
 
   /* MOBILE */
   @media (max-width: 600px) {
-    .navbar { padding: 0 16px; gap: 8px; }
+    .navbar-inner { padding: 0 16px; gap: 8px; }
     .logo { font-size: 15px; }
 
     .nav-item-label { padding: 0 8px; font-size: 12px; }
@@ -234,7 +237,8 @@
 
   <!-- NAVBAR -->
   <nav class="navbar">
-    <div class="logo">play<span>count</span><em>v10</em></div>
+   <div class="navbar-inner">
+    <div class="logo">play<span>count</span><em>v11</em></div>
     <div class="nav-links">
       <div class="nav-item">
         <div class="nav-item-label active" id="nav-tracks" onclick="goTo('tracks','recent')" ontouchstart="toggleDropdown('dd-tracks',event)">Tracks</div>
@@ -284,7 +288,9 @@
         </div>
       </div>
     </div>
+   </div>
   </nav>
+  <div id="nav-overlay"></div>
 
   <!-- TRACKS PAGE -->
   <div class="page active" id="page-tracks">
@@ -1745,6 +1751,12 @@
   });
 
   document.addEventListener('DOMContentLoaded', function() {
+    const navOverlay = document.getElementById('nav-overlay');
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('mouseenter', () => navOverlay.classList.add('visible'));
+      item.addEventListener('mouseleave', () => navOverlay.classList.remove('visible'));
+    });
+
     document.querySelectorAll('.drop-item').forEach(item => {
       item.addEventListener('touchstart', function(e) {
         e.stopPropagation();
