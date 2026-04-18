@@ -159,6 +159,13 @@
   .new-song-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .new-song-artist { font-size: 11px; color: #555; margin-top: 1px; }
   .new-badge { font-size: 9px; padding: 1px 7px; border-radius: 20px; background: rgba(var(--accent-rgb),0.15); color: var(--accent); font-weight: 500; flex-shrink: 0; }
+  .ns-push-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+  .ns-push-status { font-size:11px; color:#555; flex:1; min-width:0; line-height:1.5; }
+  .ns-push-status a { color:var(--accent); text-decoration:none; }
+  .ns-push-status a:hover { text-decoration:underline; }
+  .ns-push-btn { font-size:12px; padding:6px 16px; border-radius:20px; background:var(--accent); color:#000; font-weight:500; border:none; cursor:pointer; transition:opacity 0.15s; flex-shrink:0; }
+  .ns-push-btn:hover { opacity:0.85; }
+  .ns-push-btn:disabled { opacity:0.5; cursor:default; }
 
   /* SETTINGS MODAL */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 500; align-items: center; justify-content: center; }
@@ -218,7 +225,7 @@
 
   <!-- NAVBAR -->
   <nav class="navbar">
-    <div class="logo">play<span>count</span><em>v7</em></div>
+    <div class="logo">play<span>count</span><em>v8</em></div>
     <div class="nav-links">
       <div class="nav-item">
         <div class="nav-item-label active" id="nav-tracks" onclick="goTo('tracks','recent')" ontouchstart="toggleDropdown('dd-tracks',event)">Tracks</div>
@@ -463,7 +470,47 @@
             </div>
           </div>
         </div>
+        <div class="ns-push-row">
+          <div id="ns-push-status" class="ns-push-status">No playlist synced yet</div>
+          <button class="ns-push-btn" id="ns-push-btn" onclick="nsSpotifyPush()">Push to Spotify</button>
+        </div>
+        <div style="background:#111;border-radius:8px;padding:14px 16px;margin-bottom:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <span style="font-size:12px;color:#aaa;font-weight:500;">Auto-sync</span>
+            <div id="ns-autosync-toggle" class="tool-check" onclick="toggleAutoSync()" style="cursor:pointer;"></div>
+          </div>
+          <div id="ns-autosync-settings" style="display:none;margin-top:14px;display:none;flex-direction:column;gap:12px;">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <span style="font-size:12px;color:#666;flex-shrink:0;">Every</span>
+              <div style="display:flex;gap:6px;">
+                <div id="ns-ai-1"  class="subtab"        onclick="setAutoInterval(1)"  style="font-size:11px;">1h</div>
+                <div id="ns-ai-6"  class="subtab active" onclick="setAutoInterval(6)"  style="font-size:11px;">6h</div>
+                <div id="ns-ai-12" class="subtab"        onclick="setAutoInterval(12)" style="font-size:11px;">12h</div>
+                <div id="ns-ai-24" class="subtab"        onclick="setAutoInterval(24)" style="font-size:11px;">24h</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <span style="font-size:12px;color:#666;flex-shrink:0;">Manual adds</span>
+              <div style="display:flex;gap:6px;">
+                <div id="ns-sync-merge"     class="subtab active" onclick="setNsSyncMode('merge')"     style="font-size:11px;">Keep</div>
+                <div id="ns-sync-overwrite" class="subtab"        onclick="setNsSyncMode('overwrite')" style="font-size:11px;">Overwrite</div>
+              </div>
+            </div>
+            <div id="ns-autosync-status" style="font-size:11px;color:#555;"></div>
+          </div>
+        </div>
         <div class="new-songs-list" id="new-songs-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRM MODAL -->
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="modal" style="max-width:340px;padding:24px;">
+      <div id="confirm-msg" style="font-size:13px;color:#ccc;line-height:1.6;margin-bottom:20px;"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button id="confirm-cancel-btn" style="font-size:12px;padding:7px 16px;border-radius:20px;background:transparent;border:0.5px solid rgba(255,255,255,0.15);color:#aaa;cursor:pointer;"></button>
+        <button id="confirm-ok-btn" style="font-size:12px;padding:7px 16px;border-radius:20px;background:var(--accent);border:none;color:#000;font-weight:500;cursor:pointer;"></button>
       </div>
     </div>
   </div>
@@ -527,6 +574,377 @@
 
 </div>
 <script>
+  // ── SPOTIFY CONFIG ───────────────────────────────────────────
+  // Replace with your Spotify app's Client ID from developer.spotify.com
+  const SPOTIFY_CLIENT_ID = 'YOUR_CLIENT_ID';
+  const SPOTIFY_REDIRECT_URI = window.location.origin + window.location.pathname;
+  const SPOTIFY_SCOPES = 'playlist-modify-public playlist-modify-private';
+
+  // ── SPOTIFY PKCE OAUTH ───────────────────────────────────────
+  function randomBytes(len) {
+    return crypto.getRandomValues(new Uint8Array(len));
+  }
+
+  function base64url(buf) {
+    return btoa(String.fromCharCode(...buf)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  }
+
+  async function generateCodeChallenge(verifier) {
+    const data = new TextEncoder().encode(verifier);
+    const digest = await crypto.subtle.digest('SHA-256', data);
+    return base64url(new Uint8Array(digest));
+  }
+
+  async function spotifyLogin() {
+    const verifier = base64url(randomBytes(32));
+    const challenge = await generateCodeChallenge(verifier);
+    localStorage.setItem('sp_verifier', verifier);
+    localStorage.setItem('sp_push_pending', '1');
+    const params = new URLSearchParams({
+      client_id: SPOTIFY_CLIENT_ID,
+      response_type: 'code',
+      redirect_uri: SPOTIFY_REDIRECT_URI,
+      code_challenge_method: 'S256',
+      code_challenge: challenge,
+      scope: SPOTIFY_SCOPES,
+    });
+    window.location = 'https://accounts.spotify.com/authorize?' + params;
+  }
+
+  async function exchangeCode(code) {
+    const verifier = localStorage.getItem('sp_verifier');
+    const res = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: SPOTIFY_CLIENT_ID,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: SPOTIFY_REDIRECT_URI,
+        code_verifier: verifier,
+      }),
+    });
+    if (!res.ok) throw new Error('Token exchange failed');
+    const data = await res.json();
+    localStorage.setItem('sp_access_token', data.access_token);
+    localStorage.setItem('sp_token_expiry', Date.now() + data.expires_in * 1000);
+    if (data.refresh_token) localStorage.setItem('sp_refresh_token', data.refresh_token);
+    localStorage.removeItem('sp_verifier');
+  }
+
+  async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem('sp_refresh_token');
+    if (!refreshToken) return null;
+    const res = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: SPOTIFY_CLIENT_ID,
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    localStorage.setItem('sp_access_token', data.access_token);
+    localStorage.setItem('sp_token_expiry', Date.now() + data.expires_in * 1000);
+    if (data.refresh_token) localStorage.setItem('sp_refresh_token', data.refresh_token);
+    return data.access_token;
+  }
+
+  async function getValidToken() {
+    const token = localStorage.getItem('sp_access_token');
+    const expiry = parseInt(localStorage.getItem('sp_token_expiry') || '0');
+    if (token && Date.now() < expiry - 60000) return token;
+    return await refreshAccessToken();
+  }
+
+  async function handleSpotifyCallback() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const error = params.get('error');
+    if (error) {
+      localStorage.removeItem('sp_push_pending');
+      history.replaceState(null, '', window.location.pathname + window.location.hash);
+      return;
+    }
+    if (!code) return;
+    history.replaceState(null, '', window.location.pathname + window.location.hash);
+    try {
+      await exchangeCode(code);
+      if (localStorage.getItem('sp_push_pending')) {
+        localStorage.removeItem('sp_push_pending');
+        await nsSpotifyPush();
+      }
+    } catch(e) {
+      setNsPushStatus('Auth failed: ' + e.message, true);
+    }
+  }
+
+  // ── SPOTIFY API HELPERS ──────────────────────────────────────
+  async function spotifyApi(method, path, body, token) {
+    const res = await fetch('https://api.spotify.com/v1' + path, {
+      method,
+      headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || res.statusText);
+    }
+    return res.status === 204 ? null : res.json();
+  }
+
+  async function searchTrackUri(token, name, artist) {
+    const q = encodeURIComponent(`track:${name} artist:${artist.split(' ft')[0].split(' feat')[0].trim()}`);
+    const data = await spotifyApi('GET', `/search?q=${q}&type=track&limit=1`, null, token);
+    return data?.tracks?.items?.[0]?.uri || null;
+  }
+
+  async function syncPlaylistTracks(token, playlistId, appUris) {
+    if (state.nsSyncMode === 'merge') {
+      // Fetch current playlist tracks, keep any that the app didn't add
+      const current = [];
+      let url = `/playlists/${playlistId}/tracks?limit=50&fields=next,items(track(uri))`;
+      while (url) {
+        const data = await spotifyApi('GET', url, null, token);
+        data.items.forEach(i => { if (i.track?.uri) current.push(i.track.uri); });
+        url = data.next ? data.next.replace('https://api.spotify.com/v1', '') : null;
+      }
+      const appSet = new Set(appUris);
+      const manualUris = current.filter(u => !appSet.has(u));
+      const merged = [...appUris, ...manualUris];
+      await spotifyApi('PUT', `/playlists/${playlistId}/tracks`, { uris: merged }, token);
+    } else {
+      await spotifyApi('PUT', `/playlists/${playlistId}/tracks`, { uris: appUris.length ? appUris : [] }, token);
+    }
+  }
+
+  async function findUserPlaylistByName(token, userId, name) {
+    let url = `/users/${userId}/playlists?limit=50`;
+    while (url) {
+      const data = await spotifyApi('GET', url.startsWith('http') ? url.replace('https://api.spotify.com/v1','') : url, null, token);
+      const match = data.items.find(p => p.name.toLowerCase() === name.toLowerCase());
+      if (match) return match;
+      url = data.next ? data.next.replace('https://api.spotify.com/v1','') : null;
+    }
+    return null;
+  }
+
+  // ── CONFIRM MODAL ────────────────────────────────────────────
+  function showConfirm(msg, okText, cancelText) {
+    return new Promise(resolve => {
+      document.getElementById('confirm-msg').textContent = msg;
+      document.getElementById('confirm-ok-btn').textContent = okText;
+      document.getElementById('confirm-cancel-btn').textContent = cancelText;
+      const modal = document.getElementById('confirm-modal');
+      modal.classList.add('open');
+      function cleanup(result) {
+        modal.classList.remove('open');
+        document.getElementById('confirm-ok-btn').onclick = null;
+        document.getElementById('confirm-cancel-btn').onclick = null;
+        resolve(result);
+      }
+      document.getElementById('confirm-ok-btn').onclick = () => cleanup(true);
+      document.getElementById('confirm-cancel-btn').onclick = () => cleanup(false);
+    });
+  }
+
+  // ── NEW SONGS PUSH LOGIC ─────────────────────────────────────
+  function setNsPushStatus(msg, isError) {
+    const el = document.getElementById('ns-push-status');
+    if (el) { el.innerHTML = isError ? `<span style="color:#f87171">${msg}</span>` : msg; }
+  }
+
+  function updateNsPushStatus() {
+    const id = localStorage.getItem('ns_playlist_id');
+    const name = localStorage.getItem('ns_playlist_name');
+    const synced = parseInt(localStorage.getItem('ns_last_synced') || '0');
+    const btn = document.getElementById('ns-push-btn');
+    if (!id) {
+      setNsPushStatus('No playlist synced yet');
+      if (btn) btn.textContent = 'Push to Spotify';
+      return;
+    }
+    const ago = synced ? timeAgo(synced) : 'unknown';
+    setNsPushStatus(`Synced to "<strong>${name}</strong>" · ${ago} · <a href="https://open.spotify.com/playlist/${id}" target="_blank">Open ↗</a>`);
+    if (btn) btn.textContent = 'Sync again';
+  }
+
+  function timeAgo(ts) {
+    const s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 10) return 'just now';
+    if (s < 60) return s + 's ago';
+    if (s < 3600) return Math.floor(s/60) + 'm ago';
+    if (s < 86400) return Math.floor(s/3600) + 'h ago';
+    return Math.floor(s/86400) + 'd ago';
+  }
+
+  async function nsSpotifyPush() {
+    if (SPOTIFY_CLIENT_ID === 'YOUR_CLIENT_ID') {
+      setNsPushStatus('Set your Spotify Client ID in the code first (SPOTIFY_CLIENT_ID)', true);
+      return;
+    }
+    const btn = document.getElementById('ns-push-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Connecting…'; }
+    try {
+      await nsSpotifyPushCore({ silent: false, btn });
+    } finally {
+      if (btn) btn.disabled = false;
+      updateNsPushStatus();
+    }
+  }
+
+  async function nsSpotifyPushCore({ silent, btn } = {}) {
+    let token = await getValidToken();
+    if (!token) {
+      if (!silent) await spotifyLogin();
+      return;
+    }
+
+    const name = document.getElementById('ns-playlist-name').value.trim() || 'New Releases';
+    const storedId = localStorage.getItem('ns_playlist_id');
+    const storedName = localStorage.getItem('ns_playlist_name');
+
+    if (!silent && btn) btn.textContent = 'Fetching tracks…';
+
+    const duration = parseInt(document.getElementById('ns-duration')?.value || '7');
+    const mode = state.nsMode || 'feat';
+    const filtered = newSongs.filter(s => {
+      if (s.daysAgo > duration) return false;
+      if (mode === 'main' && s.isFeature) return false;
+      return true;
+    });
+
+    const uris = (await Promise.all(
+      filtered.map(s => searchTrackUri(token, s.name, s.mainArtist))
+    )).filter(Boolean);
+
+    if (!storedId) {
+      if (!silent && btn) btn.textContent = 'Checking playlists…';
+      const me = await spotifyApi('GET', '/me', null, token);
+      const existing = await findUserPlaylistByName(token, me.id, name);
+
+      let targetId;
+      if (existing && !silent) {
+        const use = await showConfirm(`Found an existing Spotify playlist named "${name}". Use it (tracks will be replaced) or create a new one?`, 'Use existing', 'Create new');
+        if (use) targetId = existing.id;
+      } else if (existing && silent) {
+        targetId = existing.id;
+      }
+
+      if (!targetId) {
+        if (!silent && btn) btn.textContent = 'Creating playlist…';
+        const playlist = await spotifyApi('POST', `/users/${me.id}/playlists`, {
+          name,
+          description: 'Auto-synced by Playcount',
+          public: false,
+        }, token);
+        targetId = playlist.id;
+      }
+
+      if (!silent && btn) btn.textContent = 'Syncing tracks…';
+      await syncPlaylistTracks(token, targetId, uris);
+      localStorage.setItem('ns_playlist_id', targetId);
+      localStorage.setItem('ns_playlist_name', name);
+    } else {
+      if (name !== storedName) {
+        if (!silent && btn) btn.textContent = 'Renaming…';
+        await spotifyApi('PUT', `/playlists/${storedId}`, { name }, token);
+        localStorage.setItem('ns_playlist_name', name);
+      }
+      if (!silent && btn) btn.textContent = 'Syncing tracks…';
+      await syncPlaylistTracks(token, storedId, uris);
+    }
+
+    localStorage.setItem('ns_last_synced', Date.now());
+    updateNsPushStatus();
+  }
+
+  // ── AUTO-SYNC ────────────────────────────────────────────────
+  let autoSyncTimer = null;
+  let autoSyncCountdownTimer = null;
+
+  function toggleAutoSync() {
+    state.nsAutoSync = !state.nsAutoSync;
+    saveAutoSyncSettings();
+    updateAutoSyncUI();
+    if (state.nsAutoSync) {
+      scheduleAutoSync();
+    } else {
+      clearAutoSyncTimers();
+      localStorage.removeItem('ns_next_sync');
+    }
+  }
+
+  function setAutoInterval(h) {
+    state.nsAutoInterval = h;
+    [1,6,12,24].forEach(v => document.getElementById('ns-ai-'+v)?.classList.toggle('active', v === h));
+    saveAutoSyncSettings();
+    if (state.nsAutoSync) {
+      localStorage.setItem('ns_next_sync', Date.now() + h * 3600000);
+      scheduleAutoSync();
+    }
+  }
+
+  function saveAutoSyncSettings() {
+    localStorage.setItem('ns_autosync', state.nsAutoSync ? 'on' : 'off');
+    localStorage.setItem('ns_autosync_interval', state.nsAutoInterval);
+    localStorage.setItem('ns_sync_mode', state.nsSyncMode);
+  }
+
+  function loadAutoSyncSettings() {
+    state.nsAutoSync = localStorage.getItem('ns_autosync') === 'on';
+    state.nsAutoInterval = parseInt(localStorage.getItem('ns_autosync_interval') || '6');
+    state.nsSyncMode = localStorage.getItem('ns_sync_mode') || 'merge';
+  }
+
+  function clearAutoSyncTimers() {
+    if (autoSyncTimer) { clearTimeout(autoSyncTimer); autoSyncTimer = null; }
+    if (autoSyncCountdownTimer) { clearInterval(autoSyncCountdownTimer); autoSyncCountdownTimer = null; }
+  }
+
+  function scheduleAutoSync() {
+    clearAutoSyncTimers();
+    if (!state.nsAutoSync) return;
+
+    const next = parseInt(localStorage.getItem('ns_next_sync') || '0');
+    const delay = Math.max(0, next - Date.now());
+
+    autoSyncTimer = setTimeout(async () => {
+      localStorage.setItem('ns_next_sync', Date.now() + state.nsAutoInterval * 3600000);
+      try { await nsSpotifyPushCore({ silent: true }); } catch(e) {}
+      updateAutoSyncCountdown();
+      scheduleAutoSync();
+    }, delay);
+
+    autoSyncCountdownTimer = setInterval(updateAutoSyncCountdown, 30000);
+    updateAutoSyncCountdown();
+  }
+
+  function updateAutoSyncUI() {
+    const toggle = document.getElementById('ns-autosync-toggle');
+    const settings = document.getElementById('ns-autosync-settings');
+    if (toggle) toggle.classList.toggle('checked', state.nsAutoSync);
+    if (settings) settings.style.display = state.nsAutoSync ? 'flex' : 'none';
+    [1,6,12,24].forEach(v => document.getElementById('ns-ai-'+v)?.classList.toggle('active', v === state.nsAutoInterval));
+    document.getElementById('ns-sync-merge')?.classList.toggle('active', state.nsSyncMode === 'merge');
+    document.getElementById('ns-sync-overwrite')?.classList.toggle('active', state.nsSyncMode === 'overwrite');
+    updateAutoSyncCountdown();
+  }
+
+  function updateAutoSyncCountdown() {
+    const el = document.getElementById('ns-autosync-status');
+    if (!el || !state.nsAutoSync) return;
+    const next = parseInt(localStorage.getItem('ns_next_sync') || '0');
+    if (!next) { el.textContent = 'Syncing soon…'; return; }
+    const ms = next - Date.now();
+    if (ms <= 0) { el.textContent = 'Syncing…'; return; }
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    el.textContent = 'Next sync in ' + (h > 0 ? h + 'h ' : '') + m + 'm';
+  }
+
   // ── DUMMY DATA ───────────────────────────────────────────────
 
   const recentTracks = [
@@ -712,6 +1130,9 @@
   const state = {
     page: 'tracks',
     nsMode: 'feat',
+    nsSyncMode: 'merge',
+    nsAutoSync: false,
+    nsAutoInterval: 6,
     tracksTab: 'recent',
     artistsTab: 'top',
     statsTab: 'activity',
@@ -728,7 +1149,7 @@
   const futureItems = [
     { id: 1,  text: 'Real album art',               section: 'Spotify API',       done: false },
     { id: 2,  text: 'Real artist images',            section: 'Spotify API',       done: false },
-    { id: 3,  text: 'Login with Spotify',            section: 'Spotify API',       done: false },
+    { id: 3,  text: 'Login with Spotify',            section: 'Spotify API',       done: true  },
     { id: 4,  text: 'Loading skeleton',              section: 'Spotify API',       done: false },
     { id: 5,  text: 'Real play counts',              section: 'Spotify API',       done: false },
     { id: 6,  text: 'Energy / mood bars on tracks',  section: 'Track details',     done: false },
@@ -738,7 +1159,7 @@
     { id: 10, text: 'Skip next / previous',          section: 'Playback (Premium)',done: false },
     { id: 11, text: 'Add to queue',                  section: 'Playback (Premium)',done: false },
     { id: 12, text: 'Create playlist from top tracks',section: 'Playlists',        done: false },
-    { id: 13, text: 'Add tracks to playlist',        section: 'Playlists',        done: false },
+    { id: 13, text: 'Add tracks to playlist',        section: 'Playlists',        done: true  },
     { id: 14, text: 'Like / unlike track',           section: 'Library',          done: false },
     { id: 15, text: 'Follow / unfollow artist',      section: 'Library',          done: false },
     { id: 16, text: 'Listening heatmap',             section: 'Stats',            done: false },
@@ -748,7 +1169,7 @@
     { id: 20, text: 'New song notifications',        section: 'Tools',            done: false },
     { id: 21, text: 'Remove if listened',            section: 'Tools',            done: false },
     { id: 22, text: 'Remove if liked / disliked',    section: 'Tools',            done: false },
-    { id: 23, text: 'New songs → auto-sync Spotify', section: 'Tier 2',           done: false },
+    { id: 23, text: 'New songs → auto-sync Spotify', section: 'Tier 2',           done: true  },
     { id: 24, text: 'Auto-remove after duration',    section: 'Tier 2',           done: false },
     { id: 25, text: 'Auto-remove if listened',       section: 'Tier 2',           done: false },
     { id: 26, text: 'Auto-remove if liked/disliked', section: 'Tier 2',           done: false },
@@ -758,12 +1179,13 @@
     { id: 30, text: 'Recently played subtab filters',section: 'Other',            done: false },
     { id: 31, text: 'Fix blank page on first load',  section: 'Bugs',             done: false },
     { id: 32, text: 'Split into separate files',     section: 'End of project',   done: false },
+    { id: 33, text: 'Auto-sync via Firestore + Cloud Functions (runs when app is closed)', section: 'Tier 2', done: false },
   ];
 
   (function loadFutureState() {
     try {
       const saved = JSON.parse(localStorage.getItem('futureItems') || '{}');
-      futureItems.forEach(item => { if (saved[item.id] !== undefined) item.done = saved[item.id]; });
+      futureItems.forEach(item => { if (!item.done && saved[item.id] !== undefined) item.done = saved[item.id]; });
     } catch(e) {}
   })();
 
@@ -999,6 +1421,13 @@
     renderNewSongs();
   }
 
+  function setNsSyncMode(mode) {
+    state.nsSyncMode = mode;
+    document.getElementById('ns-sync-overwrite').classList.toggle('active', mode === 'overwrite');
+    document.getElementById('ns-sync-merge').classList.toggle('active', mode === 'merge');
+    saveAutoSyncSettings();
+  }
+
   // ── NAVIGATION ───────────────────────────────────────────────
   // ── CUSTOM SELECT ────────────────────────────────────────────
   function toggleCSelect(id) {
@@ -1165,6 +1594,11 @@
   render();
 
   window.addEventListener('hashchange', initFromHash);
+  handleSpotifyCallback();
+  loadAutoSyncSettings();
+  updateNsPushStatus();
+  updateAutoSyncUI();
+  if (state.nsAutoSync) scheduleAutoSync();
   initFromHash();
 </script>
 </body>
