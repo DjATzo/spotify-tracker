@@ -802,9 +802,9 @@
     const meTest = await fetch('https://api.spotify.com/v1/me', {
       headers: { Authorization: 'Bearer ' + token }
     });
-    console.log('[fetchUserData] /me status:', meTest.status, await meTest.text().then(t => t.slice(0, 200)));
+    const meBody = await meTest.text();
+    console.error('[fetchUserData] /me status:', meTest.status, meBody.slice(0, 300));
     if (!meTest.ok) {
-      console.error('[fetchUserData] token rejected, clearing and redirecting to login');
       ['sp_access_token','sp_refresh_token','sp_token_expiry'].forEach(k => localStorage.removeItem(k));
       showLoginPage();
       return;
