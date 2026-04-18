@@ -975,7 +975,7 @@
         await nsSpotifyPush();
       } else {
         localStorage.removeItem('sp_login_pending');
-        showMainApp(true);
+        showMainApp(false);
       }
     } catch(e) {
       setNsPushStatus('Auth failed: ' + e.message, true);
