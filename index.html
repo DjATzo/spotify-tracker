@@ -1542,7 +1542,7 @@
         <div class="bar-wrap"><div class="bar-bg"><div class="bar-fill bar-green" style="width:${t.pct}%"></div></div></div>
       </div>
       <div class="track-right">
-        <div class="play-count">${isListened ? '#' + t.plays : t.plays}</div>
+        <div class="play-count">${t.plays}</div>
         <div class="plays-label">${isListened ? (state.listenedCountMode === 'plays' ? 'plays' : 'rank') : 'plays'}</div>
         ${isListened ? '<div class="badge-alltime">top</div>' : `<div class="time-ago">${t.ago}</div>`}
       </div>
@@ -1760,14 +1760,14 @@
     if (state.recentSubtab === 'notliked') recent = sortedRecent.filter(t => !t.liked).slice(0, n.tracks);
     document.getElementById('list-recent').innerHTML = recent.map((t, i) => renderTrackRow(t, i, false)).join('');
     try {
-      const ld = (listenedData[state.listenedSubtab] || listenedData['7days']).map(t => {
-        if (state.listenedCountMode === 'plays' && userPlays[t.id]?.count) {
-          const c = userPlays[t.id].count;
-          const maxC = Math.max(...(listenedData[state.listenedSubtab] || listenedData['7days']).map(x => userPlays[x.id]?.count || 0), 1);
+      const baseLd = listenedData[state.listenedSubtab] || listenedData['7days'];
+      const ld = state.listenedCountMode === 'plays' ? (() => {
+        const maxC = Math.max(...baseLd.map(t => userPlays[t.id]?.count || 0), 1);
+        return baseLd.map(t => {
+          const c = userPlays[t.id]?.count || 0;
           return { ...t, plays: c, pct: Math.round((c / maxC) * 100) };
-        }
-        return t;
-      });
+        });
+      })() : baseLd;
       document.getElementById('list-listened').innerHTML = ld.slice(0, n.tracks).map((t, i) => renderTrackRow(t, i, true)).join('');
       document.getElementById('list-top-artists').innerHTML = (topArtistsData[state.topSubtab] || topArtistsData.week).slice(0, n.artists).map(renderArtistRow).join('');
       document.getElementById('list-followed').innerHTML = followedArtists.slice(0, n.artists).map(renderArtistRow).join('');
