@@ -1680,7 +1680,7 @@
     document.getElementById('nav-' + page).classList.add('active');
     state.page = page;
     setTab(page, tab);
-    window.location.hash = page + '/' + tab;
+    history.replaceState(null, '', '#' + page + '/' + tab);
     hideDropdowns();
   }
 
@@ -1748,11 +1748,12 @@
     document.querySelectorAll('.drop-item').forEach(item => {
       item.addEventListener('touchstart', function(e) {
         e.stopPropagation();
+        e.preventDefault();
         const fn = this.getAttribute('onclick');
         document.querySelectorAll('.nav-dropdown').forEach(d => d.classList.remove('dd-open'));
         if (fn) eval(fn);
       });
-      item.addEventListener('click', function(e) { e.stopPropagation(); });
+      item.addEventListener('click', function(e) { e.stopPropagation(); e.preventDefault(); });
     });
   });
 
