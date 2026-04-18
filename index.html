@@ -805,6 +805,21 @@
     });
     const meBody = await meTest.text();
     console.error('[fetchUserData] /me status:', meTest.status, meBody.slice(0, 300));
+    if (meTest.ok) {
+      try {
+        const meJson = JSON.parse(meBody);
+        const imgUrl = meJson.images?.[0]?.url || meJson.images?.[1]?.url || null;
+        const initials = (meJson.display_name || 'U').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+        const avatarEl = document.querySelector('.avatar');
+        if (avatarEl) {
+          if (imgUrl) {
+            avatarEl.innerHTML = `<img src="${imgUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
+          } else {
+            avatarEl.textContent = initials;
+          }
+        }
+      } catch(e) {}
+    }
     if (!meTest.ok) {
       ['sp_access_token','sp_refresh_token','sp_token_expiry'].forEach(k => localStorage.removeItem(k));
       showLoginPage();
@@ -1678,7 +1693,7 @@
       if (l !== last) { html += `<div class="letter-divider">${l}</div>`; last = l; }
       const likedCount = getLikedCountForArtist(a.name);
       html += `<div class="artist-row">
-        <div class="artist-thumb" style="background:${a.color}"></div>
+        ${a.imageUrl ? `<img class="artist-thumb" src="${a.imageUrl}" style="object-fit:cover;" />` : `<div class="artist-thumb" style="background:${a.color}"></div>`}
         <div class="artist-name">${a.name}</div>
         ${likedCount > 0 ? `<span class="liked-count">${likedCount} liked</span>` : ''}
         <div class="badge-following">following</div>
