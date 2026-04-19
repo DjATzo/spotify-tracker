@@ -2,98 +2,81 @@
 
 ---
 
-## The Big Picture
+## Login
 
-Playcount is a Spotify tracking app. Its job is to record every song you listen to, count how many times you've played each one, and display your listening history in a clean interface. It does this by connecting to Spotify on your behalf and reading your listening data.
-
----
-
-## Authentication — How You Log In
-
-When you click "Connect with Spotify", the app sends you to Spotify's own login page. You approve access there, and Spotify sends you back to the app with a one-time code.
-
-The app exchanges that code for two things:
-- An **access token** — a temporary key (lasts 1 hour) that lets the app read your Spotify data
-- A **refresh token** — a permanent key used to get a new access token when the old one expires
-
-Both are stored in your browser and in the database. From this point on, you never need to log in again unless you explicitly log out.
-
-Every time the access token expires, the app silently uses the refresh token to get a new one in the background. You never notice this happening.
+You click "Connect with Spotify" and get sent to Spotify to approve access. Spotify sends you back with a code. The app swaps that code for two keys — one that expires in an hour, one that never expires. Both are saved in your browser and database. You never log in again unless you log out. When the short key expires the app silently gets a new one.
 
 ---
 
-## The Database — Where Your Data Lives
+## Where Data Lives
 
-The app uses two databases:
+**Spotify** — your live listening data. The app reads from it, never writes to it.
 
-**Spotify** holds your live listening data — recently played tracks, top tracks, top artists, followed artists. The app reads from here but never writes to it.
-
-**Firebase** is the app's own database. It stores everything the app tracks itself — how many times you've played each song, the timestamps of each play, your settings, and your refresh token. This data persists between sessions and grows over time.
+**Firebase** — the app's own database. Stores your play counts, timestamps, settings, and your permanent login key. Grows over time.
 
 ---
 
-## How Plays Get Counted
+## How Plays Are Counted
 
-Every time you finish a song, Spotify logs it internally. The app reads those logs and saves them to Firebase. Each play is identified by the exact timestamp it happened — so if you play the same song three times, it gets counted three times because each has a different timestamp.
+Each play is saved with its exact timestamp. Same song played three times = three different timestamps = three plays. Before saving, the app checks if that timestamp already exists — if it does, it skips it. So no double counting no matter how many times the sync runs.
 
-The count stored in Firebase is "plays captured by this app" — not your all-time Spotify history. Plays before you connected the app are not counted.
-
-**Deduplication** — the app never double-counts. Before saving a play, it checks whether that exact timestamp already exists in Firebase. If it does, it skips it. This means the sync can run as many times as it wants without inflating your counts.
+The count is plays captured since you connected the app, not your all-time Spotify history.
 
 ---
 
-## Data Flow — App Open
+## When the App is Open
 
-When you open the app and are already logged in, this is what happens in order:
+On every load:
+1. Your saved data loads from Firebase
+2. The app asks Spotify for your recently played, top tracks, top artists, and followed artists all at once
+3. Everything renders on screen
 
-1. Firebase loads your saved play history and settings
-2. Seven requests go to Spotify simultaneously asking for your recently played tracks, top tracks across three time periods, and top artists across three time periods
-3. The app also fetches the full list of artists you follow on Spotify
-4. Once everything comes back, the screen is built and shown to you
-
-While you stay on the page, every 30 seconds the app quietly asks Spotify for just your single most recently played track. It compares this to what is already on screen. If it is different, a banner appears at the bottom of the screen telling you new data is available. Tapping it re-fetches everything and updates the screen.
+Every 30 seconds while you stay on the page, the app checks if you played something new. If yes, a banner appears at the bottom. Tap it to refresh.
 
 ---
 
-## Data Flow — App Closed
+## When the App is Closed
 
-When the app is closed, GitHub Actions (a scheduling service on GitHub's servers) runs every 5 minutes around the clock. It calls a function on your Vercel server.
+GitHub Actions runs every 5 minutes on GitHub's servers. It calls your Vercel function which:
+1. Gets every user from Firebase
+2. Uses their saved login key to access Spotify
+3. Fetches their last 50 plays
+4. Saves anything new to Firebase
 
-That function:
-1. Reads all users from Firebase
-2. For each user, uses their stored refresh token to get a fresh Spotify access token
-3. Fetches their last 50 recently played tracks from Spotify
-4. Checks each play against what is already saved in Firebase
-5. Saves any new plays with their timestamps and updates the play count for each track
-
-This happens completely in the background with no app, no browser, and no interaction needed.
+No browser needed. Runs around the clock.
 
 ---
 
-## Data Flow — When You Reopen the App
+## When You Reopen the App
 
-When you come back to the app after it has been closed, the background sync will have already saved your plays to Firebase. When the app loads and fetches your data, those counts are already up to date. You see your accurate history immediately.
-
----
-
-## The Gap Problem
-
-Spotify only ever returns your last 50 recently played tracks at once. If you somehow play more than 50 songs in the 5 minutes between two background syncs, the oldest ones beyond 50 would be lost. In practice this is nearly impossible — 50 songs in 5 minutes would mean a new song every 6 seconds.
+Your plays were already saved by the background sync. Everything is up to date the moment the app loads.
 
 ---
 
-## The Two Listening Sections
+## The Only Gap
 
-**Recently Played** shows your tracks in order of when you last played them. No counts, no ranks — just a timeline of what you listened to and how long ago.
-
-**Most Listened** shows how much you listen to each track. By default it uses Spotify's own ranking across all time. If all-time data is empty (new account), it falls back to the last 4 weeks. You can switch to your app's own play count instead, which is the number the background sync has been building up over time.
+Spotify returns a maximum of 50 recent plays at once. If you play more than 50 songs in 5 minutes the oldest ones beyond 50 are lost. In practice impossible — that would be a new song every 6 seconds.
 
 ---
 
-## The Servers Involved
+## The Pages
 
-- **Spotify's servers** — source of your listening data, handles login
-- **Firebase** — stores your play history, counts, settings, and refresh token
-- **Vercel** — hosts the sync function that runs when called
-- **GitHub Actions** — calls the Vercel sync function every 5 minutes on a timer
-- **Your browser** — runs the app interface and polls every 30 seconds when open
+**Recently Played** — tracks in order of when you last played them. No numbers, just a timeline.
+
+**Most Listened** — ranked by Spotify's own data. Defaults to all time, falls back to last 4 weeks if empty. Can switch to your app's play count.
+
+**Top Artists** — your most listened artists from Spotify across different time periods.
+
+**Stats** — breakdowns of your listening activity and patterns.
+
+**Tools** — manage followed artists, see new releases from artists you follow.
+
+---
+
+## The Servers
+
+- **Spotify** — source of your data, handles login
+- **Firebase** — stores everything the app tracks
+- **Vercel** — runs the sync function when called
+- **GitHub Actions** — triggers the sync every 5 minutes
+- **Your browser** — runs the app, polls every 30 seconds when open
