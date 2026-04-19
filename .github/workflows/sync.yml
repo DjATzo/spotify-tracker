@@ -1,0 +1,15 @@
+name: Sync Spotify Plays
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger sync
+        run: |
+          curl -s -X GET \
+            https://playcount-djatzos-projects.vercel.app/api/sync \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
