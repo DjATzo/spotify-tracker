@@ -3,6 +3,7 @@ name: Sync Spotify Plays
 on:
   schedule:
     - cron: '*/5 * * * *'
+  workflow_dispatch:
 
 jobs:
   sync:
