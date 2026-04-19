@@ -1571,9 +1571,11 @@
         <div class="bar-wrap"><div class="bar-bg"><div class="bar-fill bar-green" style="width:${t.pct}%"></div></div></div>
       </div>
       <div class="track-right">
-        <div class="play-count">${t.plays}</div>
-        <div class="plays-label">${isListened ? (state.listenedCountMode === 'plays' ? 'plays' : 'rank') : 'plays'}</div>
-        ${isListened ? '<div class="badge-alltime">top</div>' : `<div class="time-ago">${t.ago}</div>`}
+        ${isListened ? `
+          <div class="play-count">${t.plays}</div>
+          <div class="plays-label">${state.listenedCountMode === 'plays' ? 'plays' : 'rank'}</div>
+          <div class="badge-alltime">top</div>
+        ` : `<div class="time-ago">${t.ago}</div>`}
       </div>
     </div>`;
   }
