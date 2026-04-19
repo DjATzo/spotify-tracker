@@ -31,7 +31,7 @@ On every load:
 2. The app loads your recently played, top tracks, and top artists — served from a local 5-minute cache if available, otherwise fetched from Spotify one at a time with gaps between requests
 3. Everything renders on screen
 
-Every minute while you stay on the page, the app checks if you played something new. It only does this when the app is visible — if you switch to another tab or app it pauses. If a new play is detected, a banner appears at the bottom. Tap it to refresh.
+Every 30 seconds while the app is visible, it checks if you played something new. If you switch to another tab or app, it slows to every 60 seconds. If a new play is detected, a banner appears at the bottom. Tap it to refresh.
 
 ---
 
