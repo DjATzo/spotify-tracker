@@ -266,7 +266,7 @@
   <!-- NAVBAR -->
   <nav class="navbar">
    <div class="navbar-inner">
-    <div class="logo">play<span>count</span><em>v28</em></div>
+    <div class="logo">play<span>count</span><em>v29</em></div>
     <div class="nav-links">
       <div class="nav-item">
         <div class="nav-item-label active" id="nav-tracks" onclick="goTo('tracks','recent')" ontouchstart="toggleDropdown('dd-tracks',event)">Tracks</div>
@@ -891,18 +891,18 @@
     return Math.floor(d / 7) + ' week' + (Math.floor(d/7)>1?'s':'') + ' ago';
   }
 
-  const CACHE_TTL = 5 * 60 * 1000;
+  const CACHE_TTL = 30 * 60 * 1000;
 
   function saveApiCache(key, data) {
     try { localStorage.setItem('sp_cache_' + key, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
   }
 
-  function loadApiCache(key) {
+  function loadApiCache(key, allowStale = false) {
     try {
       const raw = localStorage.getItem('sp_cache_' + key);
       if (!raw) return null;
       const { ts, data } = JSON.parse(raw);
-      if (Date.now() - ts > CACHE_TTL) return null;
+      if (!allowStale && Date.now() - ts > CACHE_TTL) return null;
       return data;
     } catch(e) { return null; }
   }
@@ -917,6 +917,7 @@
     if (!me) {
       me = await spotifyApi('GET', '/me', null, token).catch(() => null);
       if (me) saveApiCache('me', me);
+      else me = loadApiCache('me', true);
       await delay(200);
     }
     if (me) {
@@ -929,20 +930,25 @@
     }
 
     async function cachedApi(key, path) {
-      const cached = loadApiCache(key);
-      if (cached) return cached;
+      const fresh = loadApiCache(key);
+      if (fresh) return fresh;
       const result = await spotifyApi('GET', path, null, token).catch(() => null);
-      if (result) saveApiCache(key, result);
-      await delay(200);
-      return result;
+      if (result) { saveApiCache(key, result); return result; }
+      return loadApiCache(key, true);
     }
 
     const recent  = await cachedApi('recent',   '/me/player/recently-played?limit=50');
+    await delay(200);
     const tShort  = await cachedApi('tShort',   '/me/top/tracks?limit=50&time_range=short_term');
+    await delay(200);
     const tMedium = await cachedApi('tMedium',  '/me/top/tracks?limit=50&time_range=medium_term');
+    await delay(200);
     const tLong   = await cachedApi('tLong',    '/me/top/tracks?limit=50&time_range=long_term');
+    await delay(200);
     const aShort  = await cachedApi('aShort',   '/me/top/artists?limit=50&time_range=short_term');
+    await delay(200);
     const aMedium = await cachedApi('aMedium',  '/me/top/artists?limit=50&time_range=medium_term');
+    await delay(200);
     const aLong   = await cachedApi('aLong',    '/me/top/artists?limit=50&time_range=long_term');
 
     if (recent?.items?.length) {
