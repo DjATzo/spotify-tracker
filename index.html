@@ -1045,6 +1045,7 @@
   function startPolling() {
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(async () => {
+      if (document.visibilityState !== 'visible') return;
       const token = await getValidToken().catch(() => null);
       if (!token) return;
       const data = await spotifyApi('GET', '/me/player/recently-played?limit=1', null, token).catch(() => null);
@@ -1052,7 +1053,7 @@
       if (latest && latest !== lastKnownPlayedAt) {
         document.getElementById('new-data-banner').style.display = 'block';
       }
-    }, 30 * 1000);
+    }, 2 * 60 * 1000);
   }
 
   async function refreshNewData() {
