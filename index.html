@@ -893,42 +893,18 @@
 
   async function fetchUserData() {
     const token = await getValidToken();
-    if (!token) { console.warn('[fetchUserData] no token'); return; }
-    console.log('[fetchUserData] token prefix:', token.slice(0, 20));
+    if (!token) return;
 
-    // quick sanity check
-    const meTest = await fetch('https://api.spotify.com/v1/me', {
-      headers: { Authorization: 'Bearer ' + token }
-    });
-    const meBody = await meTest.text();
-    console.error('[fetchUserData] /me status:', meTest.status, meBody.slice(0, 300));
-    if (meTest.ok) {
-      try {
-        const meJson = JSON.parse(meBody);
-        const imgUrl = meJson.images?.[0]?.url || meJson.images?.[1]?.url || null;
-        const initials = (meJson.display_name || 'U').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
-        const avatarEl = document.querySelector('.avatar');
-        if (avatarEl) {
-          if (imgUrl) {
-            avatarEl.innerHTML = `<img src="${imgUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`;
-          } else {
-            avatarEl.textContent = initials;
-          }
-        }
-      } catch(e) {}
-    }
-    if (!meTest.ok && (meTest.status === 401 || meTest.status === 403)) {
-      ['sp_access_token','sp_refresh_token','sp_token_expiry'].forEach(k => localStorage.removeItem(k));
-      showLoginPage();
-      const errEl = document.getElementById('login-error');
-      if (errEl) {
-        errEl.style.display = 'block';
-        errEl.textContent = meTest.status === 403
-          ? 'Your Spotify account isn\'t registered as a tester in the Developer Dashboard. Go to dashboard.spotify.com → your app → Settings → User Management and add your Spotify account email.'
-          : 'Spotify returned error ' + meTest.status + '. Please try again.';
-      }
-      return;
-    }
+    spotifyApi('GET', '/me', null, token).then(me => {
+      if (!me) return;
+      const imgUrl = me.images?.[0]?.url || me.images?.[1]?.url || null;
+      const initials = (me.display_name || 'U').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+      const avatarEl = document.querySelector('.avatar');
+      if (!avatarEl) return;
+      avatarEl.innerHTML = imgUrl
+        ? `<img src="${imgUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`
+        : initials;
+    }).catch(() => {});
 
     const [recent, tShort, tMedium, tLong, aShort, aMedium, aLong] = await Promise.all([
       spotifyApi('GET', '/me/player/recently-played?limit=50', null, token).catch(() => null),
