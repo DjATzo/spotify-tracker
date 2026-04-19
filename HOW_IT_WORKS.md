@@ -28,7 +28,7 @@ The count is plays captured since you connected the app, not your all-time Spoti
 
 On every load:
 1. Your saved data loads from Firebase
-2. The app asks Spotify for your recently played, top tracks, top artists, and followed artists one at a time with a short gap between each request to avoid hitting rate limits
+2. The app loads your recently played, top tracks, and top artists — served from a local 5-minute cache if available, otherwise fetched from Spotify one at a time with gaps between requests
 3. Everything renders on screen
 
 Every minute while you stay on the page, the app checks if you played something new. It only does this when the app is visible — if you switch to another tab or app it pauses. If a new play is detected, a banner appears at the bottom. Tap it to refresh.

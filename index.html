@@ -891,12 +891,34 @@
     return Math.floor(d / 7) + ' week' + (Math.floor(d/7)>1?'s':'') + ' ago';
   }
 
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  function saveApiCache(key, data) {
+    try { localStorage.setItem('sp_cache_' + key, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
+  }
+
+  function loadApiCache(key) {
+    try {
+      const raw = localStorage.getItem('sp_cache_' + key);
+      if (!raw) return null;
+      const { ts, data } = JSON.parse(raw);
+      if (Date.now() - ts > CACHE_TTL) return null;
+      return data;
+    } catch(e) { return null; }
+  }
+
   async function fetchUserData() {
     const token = await getValidToken();
     if (!token) return;
 
     const delay = ms => new Promise(r => setTimeout(r, ms));
-    const me = await spotifyApi('GET', '/me', null, token).catch(() => null);
+
+    let me = loadApiCache('me');
+    if (!me) {
+      me = await spotifyApi('GET', '/me', null, token).catch(() => null);
+      if (me) saveApiCache('me', me);
+      await delay(200);
+    }
     if (me) {
       const imgUrl = me.images?.[0]?.url || me.images?.[1]?.url || null;
       const initials = (me.display_name || 'U').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
@@ -905,20 +927,23 @@
         ? `<img src="${imgUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`
         : initials;
     }
-    await delay(200);
-    const recent   = await spotifyApi('GET', '/me/player/recently-played?limit=50', null, token).catch(() => null);
-    await delay(200);
-    const tShort   = await spotifyApi('GET', '/me/top/tracks?limit=50&time_range=short_term', null, token).catch(() => null);
-    await delay(200);
-    const tMedium  = await spotifyApi('GET', '/me/top/tracks?limit=50&time_range=medium_term', null, token).catch(() => null);
-    await delay(200);
-    const tLong    = await spotifyApi('GET', '/me/top/tracks?limit=50&time_range=long_term', null, token).catch(() => null);
-    await delay(200);
-    const aShort   = await spotifyApi('GET', '/me/top/artists?limit=50&time_range=short_term', null, token).catch(() => null);
-    await delay(200);
-    const aMedium  = await spotifyApi('GET', '/me/top/artists?limit=50&time_range=medium_term', null, token).catch(() => null);
-    await delay(200);
-    const aLong    = await spotifyApi('GET', '/me/top/artists?limit=50&time_range=long_term', null, token).catch(() => null);
+
+    async function cachedApi(key, path) {
+      const cached = loadApiCache(key);
+      if (cached) return cached;
+      const result = await spotifyApi('GET', path, null, token).catch(() => null);
+      if (result) saveApiCache(key, result);
+      await delay(200);
+      return result;
+    }
+
+    const recent  = await cachedApi('recent',   '/me/player/recently-played?limit=50');
+    const tShort  = await cachedApi('tShort',   '/me/top/tracks?limit=50&time_range=short_term');
+    const tMedium = await cachedApi('tMedium',  '/me/top/tracks?limit=50&time_range=medium_term');
+    const tLong   = await cachedApi('tLong',    '/me/top/tracks?limit=50&time_range=long_term');
+    const aShort  = await cachedApi('aShort',   '/me/top/artists?limit=50&time_range=short_term');
+    const aMedium = await cachedApi('aMedium',  '/me/top/artists?limit=50&time_range=medium_term');
+    const aLong   = await cachedApi('aLong',    '/me/top/artists?limit=50&time_range=long_term');
 
     if (recent?.items?.length) {
       const playCounts = {}, playAgo = {}, playImage = {};
@@ -1036,8 +1061,15 @@
     }, 60 * 1000);
   }
 
+  function clearApiCache() {
+    ['me','recent','tShort','tMedium','tLong','aShort','aMedium','aLong'].forEach(k => {
+      try { localStorage.removeItem('sp_cache_' + k); } catch(e) {}
+    });
+  }
+
   async function refreshNewData() {
     document.getElementById('new-data-banner').style.display = 'none';
+    clearApiCache();
     await fetchUserData();
   }
 
