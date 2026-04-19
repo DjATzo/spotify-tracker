@@ -266,7 +266,7 @@
   <!-- NAVBAR -->
   <nav class="navbar">
    <div class="navbar-inner">
-    <div class="logo">play<span>count</span><em>v29</em></div>
+    <div class="logo">play<span>count</span><em>v30</em></div>
     <div class="nav-links">
       <div class="nav-item">
         <div class="nav-item-label active" id="nav-tracks" onclick="goTo('tracks','recent')" ontouchstart="toggleDropdown('dd-tracks',event)">Tracks</div>
@@ -918,7 +918,7 @@
       me = await spotifyApi('GET', '/me', null, token).catch(() => null);
       if (me) saveApiCache('me', me);
       else me = loadApiCache('me', true);
-      await delay(200);
+      await delay(1000);
     }
     if (me) {
       const imgUrl = me.images?.[0]?.url || me.images?.[1]?.url || null;
@@ -938,17 +938,17 @@
     }
 
     const recent  = await cachedApi('recent',   '/me/player/recently-played?limit=50');
-    await delay(200);
+    await delay(1000);
     const tShort  = await cachedApi('tShort',   '/me/top/tracks?limit=50&time_range=short_term');
-    await delay(200);
+    await delay(1000);
     const tMedium = await cachedApi('tMedium',  '/me/top/tracks?limit=50&time_range=medium_term');
-    await delay(200);
+    await delay(1000);
     const tLong   = await cachedApi('tLong',    '/me/top/tracks?limit=50&time_range=long_term');
-    await delay(200);
+    await delay(1000);
     const aShort  = await cachedApi('aShort',   '/me/top/artists?limit=50&time_range=short_term');
-    await delay(200);
+    await delay(1000);
     const aMedium = await cachedApi('aMedium',  '/me/top/artists?limit=50&time_range=medium_term');
-    await delay(200);
+    await delay(1000);
     const aLong   = await cachedApi('aLong',    '/me/top/artists?limit=50&time_range=long_term');
 
     if (recent?.items?.length) {
