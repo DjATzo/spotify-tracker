@@ -31,7 +31,7 @@ On every load:
 2. The app asks Spotify for your recently played, top tracks, top artists, and followed artists all at once
 3. Everything renders on screen
 
-Every 30 seconds while you stay on the page, the app checks if you played something new. If yes, a banner appears at the bottom. Tap it to refresh.
+Every minute while you stay on the page, the app checks if you played something new. It only does this when the app is visible — if you switch to another tab or app it pauses. If a new play is detected, a banner appears at the bottom. Tap it to refresh.
 
 ---
 
@@ -50,6 +50,12 @@ No browser needed. Runs around the clock.
 ## When You Reopen the App
 
 Your plays were already saved by the background sync. Everything is up to date the moment the app loads.
+
+---
+
+## Rate Limits
+
+Spotify limits how many requests any app can make in a short time. If the limit is hit, the app automatically waits however long Spotify says and retries — you don't need to do anything. Only if you make an unusually large number of requests in a very short time will you notice a delay.
 
 ---
 
@@ -79,4 +85,4 @@ Spotify returns a maximum of 50 recent plays at once. If you play more than 50 s
 - **Firebase** — stores everything the app tracks
 - **Vercel** — runs the sync function when called
 - **GitHub Actions** — triggers the sync every 5 minutes
-- **Your browser** — runs the app, polls every 30 seconds when open
+- **Your browser** — runs the app, polls every minute when visible
