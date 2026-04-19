@@ -895,18 +895,17 @@
     const token = await getValidToken();
     if (!token) return;
 
-    spotifyApi('GET', '/me', null, token).then(me => {
-      if (!me) return;
+    const delay = ms => new Promise(r => setTimeout(r, ms));
+    const me = await spotifyApi('GET', '/me', null, token).catch(() => null);
+    if (me) {
       const imgUrl = me.images?.[0]?.url || me.images?.[1]?.url || null;
       const initials = (me.display_name || 'U').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
       const avatarEl = document.querySelector('.avatar');
-      if (!avatarEl) return;
-      avatarEl.innerHTML = imgUrl
+      if (avatarEl) avatarEl.innerHTML = imgUrl
         ? `<img src="${imgUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" />`
         : initials;
-    }).catch(() => {});
-
-    const delay = ms => new Promise(r => setTimeout(r, ms));
+    }
+    await delay(200);
     const recent   = await spotifyApi('GET', '/me/player/recently-played?limit=50', null, token).catch(() => null);
     await delay(200);
     const tShort   = await spotifyApi('GET', '/me/top/tracks?limit=50&time_range=short_term', null, token).catch(() => null);
