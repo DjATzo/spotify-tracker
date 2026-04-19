@@ -917,8 +917,7 @@
         }
       } catch(e) {}
     }
-    if (!meTest.ok) {
-      if (meTest.status === 429) return;
+    if (!meTest.ok && (meTest.status === 401 || meTest.status === 403)) {
       ['sp_access_token','sp_refresh_token','sp_token_expiry'].forEach(k => localStorage.removeItem(k));
       showLoginPage();
       const errEl = document.getElementById('login-error');
