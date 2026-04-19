@@ -266,7 +266,7 @@
   <!-- NAVBAR -->
   <nav class="navbar">
    <div class="navbar-inner">
-    <div class="logo">play<span>count</span><em>v21</em></div>
+    <div class="logo">play<span>count</span><em>v25</em></div>
     <div class="nav-links">
       <div class="nav-item">
         <div class="nav-item-label active" id="nav-tracks" onclick="goTo('tracks','recent')" ontouchstart="toggleDropdown('dd-tracks',event)">Tracks</div>
@@ -906,15 +906,20 @@
         : initials;
     }).catch(() => {});
 
-    const [recent, tShort, tMedium, tLong, aShort, aMedium, aLong] = await Promise.all([
-      spotifyApi('GET', '/me/player/recently-played?limit=50', null, token).catch(() => null),
-      spotifyApi('GET', '/me/top/tracks?limit=50&time_range=short_term', null, token).catch(() => null),
-      spotifyApi('GET', '/me/top/tracks?limit=50&time_range=medium_term', null, token).catch(() => null),
-      spotifyApi('GET', '/me/top/tracks?limit=50&time_range=long_term', null, token).catch(() => null),
-      spotifyApi('GET', '/me/top/artists?limit=50&time_range=short_term', null, token).catch(() => null),
-      spotifyApi('GET', '/me/top/artists?limit=50&time_range=medium_term', null, token).catch(() => null),
-      spotifyApi('GET', '/me/top/artists?limit=50&time_range=long_term', null, token).catch(() => null),
-    ]);
+    const delay = ms => new Promise(r => setTimeout(r, ms));
+    const recent   = await spotifyApi('GET', '/me/player/recently-played?limit=50', null, token).catch(() => null);
+    await delay(200);
+    const tShort   = await spotifyApi('GET', '/me/top/tracks?limit=50&time_range=short_term', null, token).catch(() => null);
+    await delay(200);
+    const tMedium  = await spotifyApi('GET', '/me/top/tracks?limit=50&time_range=medium_term', null, token).catch(() => null);
+    await delay(200);
+    const tLong    = await spotifyApi('GET', '/me/top/tracks?limit=50&time_range=long_term', null, token).catch(() => null);
+    await delay(200);
+    const aShort   = await spotifyApi('GET', '/me/top/artists?limit=50&time_range=short_term', null, token).catch(() => null);
+    await delay(200);
+    const aMedium  = await spotifyApi('GET', '/me/top/artists?limit=50&time_range=medium_term', null, token).catch(() => null);
+    await delay(200);
+    const aLong    = await spotifyApi('GET', '/me/top/artists?limit=50&time_range=long_term', null, token).catch(() => null);
 
     if (recent?.items?.length) {
       const playCounts = {}, playAgo = {}, playImage = {};

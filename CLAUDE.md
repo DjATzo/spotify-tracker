@@ -34,6 +34,7 @@
 ## Project-Specific Notes
 - This CLAUDE.md applies only to the `spotify-tracker` folder.
 - The app name in index.html displays a version number as `v<number>` (e.g. `<em>v6</em>` in the logo). Increment this number by 1 on every GitHub commit.
+- Always keep HOW_IT_WORKS.md up to date automatically whenever changes affect how the app works — do not wait to be asked.
 
 ## Future Features
 
